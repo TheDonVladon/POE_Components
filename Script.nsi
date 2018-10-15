@@ -42,7 +42,7 @@ Unicode true
 ; General
   
   !define VERSION "1.0.0"
-  !define OUT_EXE_FILE_NAME "POE_Components"
+  !define OUT_FILE_NAME "POE_Components"
 
   ; Setup name
   Name "POE Components"
@@ -734,9 +734,9 @@ Unicode true
         nsisXML::getText
         ${IfNot} "$3" == "${VERSION}"
           MessageBox MB_YESNO "$(UPDATE_AVAILABLE_TEXT)" /SD IDYES IDNO end
-          inetc::get "${RELEASE_URL_PART}v$3" "$EXEDIR\${OUT_EXE_FILE_NAME}_$3" /END
+          inetc::get "${RELEASE_URL_PART}v$3" "$EXEDIR\${OUT_FILE_NAME}_$3.exe" /END
           ${If} $0 == "OK"
-            Exec '"$EXEDIR\${OUT_EXE_FILE_NAME}_$3.exe" -u --old-file-path="$EXEPATH"'
+            Exec '"$EXEDIR\${OUT_FILE_NAME}_$3.exe" -u --old-file-path="$EXEPATH"'
             Quit
           ${EndIf}
         ${EndIf}
