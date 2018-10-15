@@ -148,7 +148,7 @@ Unicode true
   !define LOGS_DIR "${COMPONENTS_DIR}\logs"
   !define ERROR_LOG_PATH "${LOGS_DIR}\errors.log"
 
-  !define CONFIG_XML_URL "https://raw.githubusercontent.com/TheDonVladon/POE_Components/feature/selfupdate/config.xml"
+  !define CONFIG_XML_URL "https://raw.githubusercontent.com/TheDonVladon/POE_Components/master/config.xml"
   !define CONFIG_XML_PATH "$PLUGINSDIR\config.xml"
   !define CONFIG_XML_VERSION_XPATH "POE_Components/settings/version"
   !define RELEASE_URL_PART "https://github.com/TheDonVladon/POE_Components/releases/download/"
@@ -205,8 +205,7 @@ Unicode true
 
 ; --------------------------------
 ; Pages
-  
-  !define MUI_PAGE_CUSTOMFUNCTION_PRE SelfUpdate
+
   !define MUI_PAGE_CUSTOMFUNCTION_SHOW WelcomePageShow
   !insertmacro MUI_PAGE_WELCOME
 
@@ -587,6 +586,8 @@ Unicode true
       MessageBox MB_OK "$(POE_PROFILE_NOTFOUND_ERROR_TEXT)" /SD IDOK
       Quit
     ${EndIf}
+
+    Call SelfUpdate
   FunctionEnd
 
   Function .onInstSuccess
@@ -734,9 +735,10 @@ Unicode true
         nsisXML::load "${CONFIG_XML_PATH}"
         nsisXML::select "${CONFIG_XML_VERSION_XPATH}"
         nsisXML::getText
-        ${IfNot} "$3" == "${VERSION}"
+        ${IfNot} $3 == "${VERSION}"
           MessageBox MB_YESNO "$(UPDATE_AVAILABLE_TEXT)" /SD IDYES IDNO end
           inetc::get "${RELEASE_URL_PART}v$3/${OUT_FILE_NAME}_$3.exe" "$EXEDIR\${OUT_FILE_NAME}_$3.exe" /END
+          Pop $0
           ${If} $0 == "OK"
             Exec '"$EXEDIR\${OUT_FILE_NAME}_$3.exe" --self-update="1" --old-file-path="$EXEPATH"'
             Quit

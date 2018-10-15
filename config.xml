@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <POE_Components>
     <settings>
-        <version>1.0.0-alpha</version>
+        <version>1.0.0</version>
     </settings>
 </POE_Components>
