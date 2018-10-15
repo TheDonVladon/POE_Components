@@ -714,13 +714,13 @@ Unicode true
     ; Parametersare used upon installer selfupdate
     ${GetParameters} $0
     ClearErrors
-    ${GetOptions} $0 "-u" $R0
+    ${GetOptions} $0 "--self-update=" $R0
     ${GetOptions} $0 "--old-file-path=" $R1
-    MessageBox MB_OK "$R0, $R1"
     ; Selfupdate was executed
     ${IfNot} ${Errors}
+    ${AndIf} "$R0" == "1"
+    ${AndIf} ${FileExists} "$R1"
       ; Delete old installer
-      MessageBox MB_OK $R1
       ${If} ${FileExists} "$R1"
         Delete $R1
       ${EndIf}
@@ -738,7 +738,7 @@ Unicode true
           MessageBox MB_YESNO "$(UPDATE_AVAILABLE_TEXT)" /SD IDYES IDNO end
           inetc::get "${RELEASE_URL_PART}v$3/${OUT_FILE_NAME}_$3.exe" "$EXEDIR\${OUT_FILE_NAME}_$3.exe" /END
           ${If} $0 == "OK"
-            Exec '"$EXEDIR\${OUT_FILE_NAME}_$3.exe" -u --old-file-path="$EXEPATH"'
+            Exec '"$EXEDIR\${OUT_FILE_NAME}_$3.exe" --self-update="1" --old-file-path="$EXEPATH"'
             Quit
           ${EndIf}
         ${EndIf}
