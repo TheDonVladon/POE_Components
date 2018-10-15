@@ -313,7 +313,7 @@ Unicode true
       ; Get status
       Pop $0
       DetailPrint "Download Status: $0"
-      ${If} $0 == "OK"
+      ${If} "$0" == "OK"
         ExecWait '"${AHK_EXE_PATH}"' $0
         DetailPrint "Execution status: $0"
       ; Download Error
@@ -343,7 +343,7 @@ Unicode true
         ; Get status
         Pop $0
         DetailPrint "Download Status: $0"
-        ${If} $0 == "OK"
+        ${If} "$0" == "OK"
           ${If} ${FileExists} "${AHK_LogoutMacro_SCRIPT_PATH}"
             SetOutPath ${AHK_LogoutMacro_DIR}
             CreateShortCut "${AHK_SCRIPTS_DIR}\LogoutMacro.lnk" "${AHK_LogoutMacro_SCRIPT_PATH}"
@@ -376,14 +376,14 @@ Unicode true
         ; Get status
         Pop $0
         DetailPrint "Download Status: $0"
-        ${If} $0 == "OK"
+        ${If} "$0" == "OK"
           ${If} ${FileExists} "${AHK_TradeMacro_ZIP_PATH}"
             DetailPrint "${AHK_TradeMacro_ZIP_PATH} exists"
             nsisunz::UnzipToStack "${AHK_TradeMacro_ZIP_PATH}" "${AHK_TradeMacro_DIR}"
             Pop $0
             DetailPrint "Unzip status: $0"
             ; Unzip success
-            ${If} $0 == "success"
+            ${If} "$0" == "success"
               ; Get unzipped folder name
               FindFirst $0 $1 "${AHK_TradeMacro_DIR}\*.*"
               ; Store $R0 in stack
@@ -392,8 +392,8 @@ Unicode true
               StrCpy $R0 0
               ; Search folder
               ${While} $R0 = 0
-                ${IfNot} $1 == "."
-                ${AndIfNot} $1 == ".."
+                ${IfNot} "$1" == "."
+                ${AndIfNot} "$1" == ".."
                   StrCpy $R0 1
                 ${Else}
                   FindNext $0 $1
@@ -403,7 +403,7 @@ Unicode true
               Pop $R0
               FindClose $0
               ; Folder found
-              ${IfNot} $1 == ""
+              ${IfNot} "$1" == ""
                 DetailPrint "Searching unzipped folder status: $1"
                 DetailPrint "Creating a shortcut for ${AHK_TradeMacro_DIR}\$1\${AHK_TradeMacro_SCRIPT}"
                 SetOutPath ${AHK_TradeMacro_DIR}\$1
@@ -448,13 +448,13 @@ Unicode true
         ; Get status
         Pop $0
         DetailPrint "Download Status: $0"
-        ${If} $0 == "OK"
+        ${If} "$0" == "OK"
           ${If} ${FileExists} "${LootFilters_NeverSink_ZIP_PATH}"
             DetailPrint "Unzip ${LootFilters_NeverSink_ZIP_PATH}"
             nsisunz::UnzipToStack "${LootFilters_NeverSink_ZIP_PATH}" "${LootFilters_NeverSink_DIR}"
             Pop $0
             DetailPrint "Unzip status: $0"
-            ${If} $0 == "success"
+            ${If} "$0" == "success"
               ; Get unzipped folder name
               FindFirst $0 $1 "${LootFilters_NeverSink_DIR}\*.*"
               ; Store $R0 in stack
@@ -463,8 +463,8 @@ Unicode true
               StrCpy $R0 0
               ; Search folder
               ${While} $R0 = 0
-                ${IfNot} $1 == "."
-                ${AndIfNot} $1 == ".."
+                ${IfNot} "$1" == "."
+                ${AndIfNot} "$1" == ".."
                   StrCpy $R0 1
                 ${Else}
                   FindNext $0 $1
@@ -475,7 +475,7 @@ Unicode true
               FindClose $0
                        
               ; Folder found
-              ${IfNot} $1 == ""
+              ${IfNot} "$1" == ""
                 DetailPrint "Searching unzipped folder status: $1"
                 DetailPrint "Copy .filter files from ${LootFilters_NeverSink_DIR}\$1 to $varPOEProfileDir"
                 
@@ -485,7 +485,7 @@ Unicode true
                   ClearErrors
                   FileRead $0 $2
                   ${Trim} $2 $2
-                  ${IfNot} $2 == ""
+                  ${IfNot} "$2" == ""
                     ${If} ${FileExists} "$varPOEProfileDir\$2"
                       SetErrors
                       MessageBox MB_YESNO|MB_ICONQUESTION  "$(LOOTFILTER_NEVERSINK_EXISTS_TEXT)" /SD IDYES IDNO end
@@ -531,7 +531,7 @@ Unicode true
       ; Get status
       Pop $0
       DetailPrint "Download Status: $0"
-      ${If} $0 == "OK"
+      ${If} "$0" == "OK"
         ExecWait '"${POB_EXE_PATH}"' $0
         DetailPrint "Execution status: $0"
       ; Download error
@@ -572,7 +572,7 @@ Unicode true
 
     ; Set default install directory
     ReadRegStr $0 HKCU "Software\GrindingGearGames\Path of Exile" InstallLocation
-    ${If} $0 == ""
+    ${If} "$0" == ""
       MessageBox MB_OK "$(POE_NOTFOUND_ERROR_TEXT)" /SD IDOK
       Quit
     ${Endif}
@@ -655,9 +655,9 @@ Unicode true
     StrCpy $R0 0
     ; Search folder
     ${While} $R0 = 0
-      ${If} $1 == "."
-      ${ElseIf} $1 == ".."
-      ${ElseIfNot} $1 == ""
+      ${If} "$1" == "."
+      ${ElseIf} "$1" == ".."
+      ${ElseIfNot} "$1" == ""
         ${NSD_CB_AddString} $varHwnd $1
       ${Else}
         StrCpy $R0 1
@@ -671,7 +671,7 @@ Unicode true
     
     ; Preselect selected in-game filter
     ReadINIStr $0 "$varPOEProfileDir\${POE_CONFIG_INI}" "UI" "item_filter"
-    ${If} $0 == "<default>"
+    ${If} "$0" == "<default>"
       StrCpy $0 "Default"
     ${EndIf}
     ${NSD_CB_SelectString} $varHwnd $0
@@ -699,10 +699,10 @@ Unicode true
     ${StrStrip} ".filter" $0 $0
     StrCpy $1 $0
     ; Edit production_Config.ini file and set selected filter
-    ${If} $0 == "Default"
+    ${If} "$0" == "Default"
       StrCpy $0 "<default>"
     ${EndIf}
-    ${IfNot} $0 == ""
+    ${IfNot} "$0" == ""
       DetailPrint "Adding $0 to the Path of Exile."
       WriteINIStr "$varPOEProfileDir\${POE_CONFIG_INI}" "UI" "item_filter" "$0"
       WriteINIStr "$varPOEProfileDir\${POE_CONFIG_INI}" "UI" "item_filter_loaded_successfully" "$0"
@@ -723,23 +723,23 @@ Unicode true
     ${AndIf} ${FileExists} "$R1"
       ; Delete old installer
       ${If} ${FileExists} "$R1"
-        Delete $R1
+        Delete "$R1"
       ${EndIf}
     ; Check for updates
     ${Else}
       inetc::get ${CONFIG_XML_URL} ${CONFIG_XML_PATH} /END
       Pop $0
-      ${If} $0 == "OK"
+      ${If} "$0" == "OK"
       ${AndIf} ${FileExists} "${CONFIG_XML_PATH}"
         nsisXML::create
         nsisXML::load "${CONFIG_XML_PATH}"
         nsisXML::select "${CONFIG_XML_VERSION_XPATH}"
         nsisXML::getText
-        ${IfNot} $3 == "${VERSION}"
+        ${IfNot} "$3" == "${VERSION}"
           MessageBox MB_YESNO "$(UPDATE_AVAILABLE_TEXT)" /SD IDYES IDNO end
           inetc::get "${RELEASE_URL_PART}v$3/${OUT_FILE_NAME}_$3.exe" "$EXEDIR\${OUT_FILE_NAME}_$3.exe" /END
           Pop $0
-          ${If} $0 == "OK"
+          ${If} "$0" == "OK"
             Exec '"$EXEDIR\${OUT_FILE_NAME}_$3.exe" --self-update="1" --old-file-path="$EXEPATH"'
             Quit
           ${EndIf}
