@@ -1,0 +1,11 @@
+# Ignore everything
+/*
+
+# Track these files
+!.gitignore
+!assets/
+!includes/
+!plugins/
+!LICENSE_ENG.txt
+!LICENSE_RUS.txt
+!Script.nsi
