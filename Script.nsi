@@ -24,13 +24,14 @@ Unicode true
 ; Additional plugins used in the project
 !addplugindir "plugins"
 
-!include "WinMessages.nsh"
 ; Provides a user interface for NSIS installers with a modern wizard style
 !include "MUI2.nsh"
 ; Allows creation of custom pages
 !include "nsDialogs.nsh"
 ; Provides macros for logical structures such as conditional execution and loops
 !include "LogicLib.nsh"
+; File Functions header
+!include "FileFunc.nsh"
 ; Provides a function, which dumps the log of the installer (installer details) to a file of your choice
 !include "DumpLog.nsh"
 ; Provides list of function for string manipulations
@@ -41,17 +42,18 @@ Unicode true
 ; General
   
   !define VERSION "1.0.0"
+  !define OUT_EXE_FILE_NAME "POE_Components"
 
   ; Setup name
   Name "POE Components"
   ; Output file
-  OutFile "Output\POE_Components.exe"
+  OutFile "Output\${OUT_EXE_NAME}_${VERSION}.exe"
   ; Request application privileges for Windows Vista/7/8/10
   RequestExecutionLevel admin
   ; Remove disk space text
   SpaceTexts none
   ; Change default branding text
-  BrandingText "POE Components v1.0.0"
+  BrandingText "POE Components v${VERSION}"
   ; Version info
   VIProductVersion "${VERSION}.0"
   VIAddVersionKey "FileVersion" "${VERSION}.0"
@@ -146,6 +148,11 @@ Unicode true
   !define LOGS_DIR "${COMPONENTS_DIR}\logs"
   !define ERROR_LOG_PATH "${LOGS_DIR}\errors.log"
 
+  !define CONFIG_XML_URL "https://raw.githubusercontent.com/TheDonVladon/POE_Components/develop/config.xml"
+  !define CONFIG_XML_PATH "$PLUGINSDIR\config.xml"
+  !define CONFIG_XML_VERSION_XPATH "POE_Components/settings/version"
+  !define RELEASE_URL_PART "https://github.com/TheDonVladon/POE_Components/releases/tag/"
+
 ; --------------------------------
 ; Interface Settings
 
@@ -199,6 +206,7 @@ Unicode true
 ; --------------------------------
 ; Pages
   
+  !define MUI_PAGE_CUSTOMFUNCTION_PRE SelfUpdate
   !define MUI_PAGE_CUSTOMFUNCTION_SHOW WelcomePageShow
   !insertmacro MUI_PAGE_WELCOME
 
@@ -226,7 +234,7 @@ Unicode true
 
 ; Language strings
   
-  LicenseLangString MUI_PAGE_LICENSE ${LANG_ENGLISH} "LICENSE_ENG.txt"
+  LicenseLangString MUI_PAGE_LICENSE ${LANG_ENGLISH} "LICENSE.txt"
   LicenseLangString MUI_PAGE_LICENSE ${LANG_RUSSIAN} "LICENSE_RUS.txt"
 
   LangString MUI_PAGE_HEADER_TEXT ${LANG_ENGLISH} "Choose Location to Path of Exile"
@@ -277,6 +285,9 @@ Unicode true
 
   LangString CREATE_SHORTCUT_CHECKBOX_TEXT ${LANG_ENGLISH} "Create desktop shortcut"
   LangString CREATE_SHORTCUT_CHECKBOX_TEXT ${LANG_RUSSIAN} "Создать ярлык на рабочем столе"
+
+  LangString UPDATE_AVAILABLE_TEXT ${LANG_ENGLISH} "A newer version for POE Components is available.$\r$\nUpdate POE Components?"
+  LangString UPDATE_AVAILABLE_TEXT ${LANG_ENGLISH} "Доступна новая версия для POE Components.$\r$\nОбновить POE Components?"
 
 ; --------------------------------
 ; Installer Sections
@@ -696,6 +707,42 @@ Unicode true
       WriteINIStr "$varPOEProfileDir\${POE_CONFIG_INI}" "UI" "item_filter_loaded_successfully" "$0"
       MessageBox MB_OK "$1 $(LOOTFILTER_SELECTED_TEXT)"
     ${EndIf}
+  FunctionEnd
+
+  Function SelfUpdate
+    ; Check execution parameters
+    ; Parametersare used upon installer selfupdate
+    ${GetParameters} $0
+    ClearErrors
+    ${GetOptions} $0 "-u" $R0
+    ${GetOptions} $0 "--old-file-path=" $R1
+    ; Selfupdate was executed
+    ${IfNot} ${Errors}
+      ; Delete old installer
+      ${If} ${FileExists} "$R1"
+        Delete $R1
+      ${EndIf}
+    ; Check for updates
+    ${Else}
+      inetc::get ${CONFIG_XML_URL} ${CONFIG_XML_PATH} /END
+      Pop $0
+      ${If} $0 == "OK"
+      ${AndIf} ${FileExists} "${CONFIG_XML_PATH}"
+        nsisXML::create
+        nsisXML::load "${CONFIG_XML_PATH}"
+        nsisXML::select "${CONFIG_XML_VERSION_XPATH}"
+        nsisXML::getText
+        ${IfNot} "$3" == "${VERSION}"
+          MessageBox MB_YESNO "$(UPDATE_AVAILABLE_TEXT)" /SD IDYES IDNO end
+          inetc::get "${RELEASE_URL_PART}v$3" "$EXEDIR\${OUT_EXE_FILE_NAME}_$3" /END
+          ${If} $0 == "OK"
+            Exec '"$EXEDIR\${OUT_EXE_FILE_NAME}_$3.exe" -u --old-file-path="$EXEPATH"'
+            Quit
+          ${EndIf}
+        ${EndIf}
+      ${EndIf}
+    ${EndIf}
+    end:
   FunctionEnd
 
   Function WelcomePageShow
