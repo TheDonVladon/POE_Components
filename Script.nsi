@@ -47,7 +47,7 @@ Unicode true
   ; Setup name
   Name "POE Components"
   ; Output file
-  OutFile "Output\${OUT_EXE_NAME}_${VERSION}.exe"
+  OutFile "Output\${OUT_FILE_NAME}_${VERSION}.exe"
   ; Request application privileges for Windows Vista/7/8/10
   RequestExecutionLevel admin
   ; Remove disk space text
@@ -148,10 +148,10 @@ Unicode true
   !define LOGS_DIR "${COMPONENTS_DIR}\logs"
   !define ERROR_LOG_PATH "${LOGS_DIR}\errors.log"
 
-  !define CONFIG_XML_URL "https://raw.githubusercontent.com/TheDonVladon/POE_Components/develop/config.xml"
+  !define CONFIG_XML_URL "https://raw.githubusercontent.com/TheDonVladon/POE_Components/feature/selfupdate/config.xml"
   !define CONFIG_XML_PATH "$PLUGINSDIR\config.xml"
   !define CONFIG_XML_VERSION_XPATH "POE_Components/settings/version"
-  !define RELEASE_URL_PART "https://github.com/TheDonVladon/POE_Components/releases/tag/"
+  !define RELEASE_URL_PART "https://github.com/TheDonVladon/POE_Components/releases/download/"
 
 ; --------------------------------
 ; Interface Settings
@@ -287,7 +287,7 @@ Unicode true
   LangString CREATE_SHORTCUT_CHECKBOX_TEXT ${LANG_RUSSIAN} "Создать ярлык на рабочем столе"
 
   LangString UPDATE_AVAILABLE_TEXT ${LANG_ENGLISH} "A newer version for POE Components is available.$\r$\nUpdate POE Components?"
-  LangString UPDATE_AVAILABLE_TEXT ${LANG_ENGLISH} "Доступна новая версия для POE Components.$\r$\nОбновить POE Components?"
+  LangString UPDATE_AVAILABLE_TEXT ${LANG_RUSSIAN} "Доступна новая версия для POE Components.$\r$\nОбновить POE Components?"
 
 ; --------------------------------
 ; Installer Sections
@@ -716,9 +716,11 @@ Unicode true
     ClearErrors
     ${GetOptions} $0 "-u" $R0
     ${GetOptions} $0 "--old-file-path=" $R1
+    MessageBox MB_OK "$R0, $R1"
     ; Selfupdate was executed
     ${IfNot} ${Errors}
       ; Delete old installer
+      MessageBox MB_OK $R1
       ${If} ${FileExists} "$R1"
         Delete $R1
       ${EndIf}
@@ -734,7 +736,7 @@ Unicode true
         nsisXML::getText
         ${IfNot} "$3" == "${VERSION}"
           MessageBox MB_YESNO "$(UPDATE_AVAILABLE_TEXT)" /SD IDYES IDNO end
-          inetc::get "${RELEASE_URL_PART}v$3" "$EXEDIR\${OUT_FILE_NAME}_$3.exe" /END
+          inetc::get "${RELEASE_URL_PART}v$3/${OUT_FILE_NAME}_$3.exe" "$EXEDIR\${OUT_FILE_NAME}_$3.exe" /END
           ${If} $0 == "OK"
             Exec '"$EXEDIR\${OUT_FILE_NAME}_$3.exe" -u --old-file-path="$EXEPATH"'
             Quit
