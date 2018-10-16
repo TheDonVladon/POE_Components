@@ -41,7 +41,7 @@ Unicode true
 
 ; General
   
-  !define VERSION "0.9.2"
+  !define VERSION "0.9.3"
   !define OUT_FILE_NAME "POE_Components"
 
   ; Setup name
@@ -49,7 +49,7 @@ Unicode true
   ; Output file
   OutFile "Output\${OUT_FILE_NAME}_${VERSION}.exe"
   ; Request application privileges for Windows Vista/7/8/10
-  RequestExecutionLevel admin
+  RequestExecutionLevel none
   ; Remove disk space text
   SpaceTexts none
   ; Change default branding text
@@ -85,10 +85,10 @@ Unicode true
   ;
   !macro ShowAbortRetryIgnore _Message
     MessageBox MB_ABORTRETRYIGNORE|MB_ICONEXCLAMATION "${_Message}\
-          $\r$\nDetails have been saved to ${ERROR_LOG_PATH}\
-          $\r$\n$\r$\nClick Abort to quit installation.\
-          $\r$\nClick Retry to try again.\
-          $\r$\nClick Ignore to ignore AutoHotkey installation."\
+          $\r$\n$(DETAILS_SAVED_TEXT) ${ERROR_LOG_PATH}\
+          $\r$\n$\r$\n$(ABORT_ACTION_TEXT)\
+          $\r$\n$(RETRY_ACTION_TEXT)\
+          $\r$\n$(IGNORE_ACTION_TEXT)"\
           /SD IDIGNORE IDRETRY retry IDABORT abort
   !macroend
   
@@ -237,6 +237,8 @@ Unicode true
 
 ; Language strings
   
+  !define UPDATE_AVAILABLE_TEXT "A newer version for POE Components is available.$\r$\nUpdate POE Components?"
+
   LicenseLangString MUI_PAGE_LICENSE ${LANG_ENGLISH} "LICENSE.txt"
   LicenseLangString MUI_PAGE_LICENSE ${LANG_RUSSIAN} "LICENSE_RUS.txt"
 
@@ -290,8 +292,15 @@ Unicode true
 
   LangString CREATE_SHORTCUT_CHECKBOX_TEXT ${LANG_ENGLISH} "Create desktop shortcut"
   LangString CREATE_SHORTCUT_CHECKBOX_TEXT ${LANG_RUSSIAN} "Создать ярлык на рабочем столе"
-
-  LangString UPDATE_AVAILABLE_TEXT ${LANG_ENGLISH} "A newer version for POE Components is available.$\r$\nUpdate POE Components?"
+  
+  LangString DETAILS_SAVED_TEXT ${LANG_ENGLISH} "Details have been saved to"
+  LangString DETAILS_SAVED_TEXT ${LANG_RUSSIAN} "Детали сохранились в"
+  LangString ABORT_ACTION_TEXT ${LANG_ENGLISH} "Click Abort to quit installation."
+  LangString ABORT_ACTION_TEXT ${LANG_RUSSIAN} "Нажмите 'Отменить' (Abort), чтобы закончить установку."
+  LangString RETRY_ACTION_TEXT ${LANG_ENGLISH} "Click Retry to try again."
+  LangString RETRY_ACTION_TEXT ${LANG_RUSSIAN} "Нажмите 'Повторить' (Retry), чтобы повторить попытку."
+  LangString IGNORE_ACTION_TEXT ${LANG_ENGLISH} "Click Ignore to ignore AutoHotkey installation."
+  LangString IGNORE_ACTION_TEXT ${LANG_RUSSIAN} "Нажмите 'Пропустить' (Ignore), чтобы продолжить установку."
 
 ; --------------------------------
 ; Installer Sections
@@ -556,28 +565,14 @@ Unicode true
 ; Functions
   
   Function .onInit
-    ; Set default language
-    StrCpy $LANGUAGE ${LANG_ENGLISH}
     ; $PLUGINSDIR is the path to a temporary folder created upon the first usage of a plug-in or a call to InitPluginsDir 
     ; This folder is automatically deleted when the installer exits
     InitPluginsDir
-
+    ; Enable security protocols (inetc plugin sends requests via IE, most of the websites requires TLS 1.2 security protocol)
+    WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Internet Settings" "SecureProtocols" 0x00000aa0
     Call SelfUpdate
-
-    ; Language selection
-    Push ""
-    Push ${LANG_ENGLISH}
-    Push "English"
-    Push ${LANG_RUSSIAN}
-    Push "Русский"
-    ; A means auto count languages
-    ; For the auto count to work the first empty push (Push "") must remain
-    Push "A"
-    LangDLL::LangDialog "Installer Language" "Please select the language of the installer"
-    Pop $LANGUAGE
-    ${If} $LANGUAGE == "cancel"
-      Quit
-    ${EndIf}
+    ; Select language
+    !insertmacro MUI_LANGDLL_DISPLAY
   FunctionEnd
 
   Function .onInstSuccess
@@ -597,8 +592,8 @@ Unicode true
       
       FileWrite $0 'REM Run all scripts from ${AHK_SCRIPTS_DIR} folder in case if some of them are not running$\r$\n'
       FileWrite $0 'if %fcount% NEQ %pcount% ($\r$\n'
-        FileWrite $0 'for %%f in ("${AHK_SCRIPTS_DIR}\*.ahk") do %%f$\r$\n'
-        FileWrite $0 'for %%f in ("${AHK_SCRIPTS_DIR}\*.lnk") do %%f$\r$\n'
+        FileWrite $0 'for %%f in ("${AHK_SCRIPTS_DIR}\*.ahk") do start "Script" "%%f"$\r$\n'
+        FileWrite $0 'for %%f in ("${AHK_SCRIPTS_DIR}\*.lnk") do start "Shortcut" "%%f"$\r$\n'
       FileWrite $0 ')$\r$\n'
 
       FileWrite $0 'start "Path of Exile" "$INSTDIR\..\$varPoeExe"$\r$\n'
@@ -639,7 +634,7 @@ Unicode true
       ${EndIf}
     ; Check for updates
     ${Else}
-      inetc::get /WEAKSECURITY /POPUP /CAPTION "Checking for updates..." ${CONFIG_XML_URL} ${CONFIG_XML_PATH} /END
+      inetc::get /WEAKSECURITY /CAPTION "Auto Update" /BANNER "Checking for updates..." ${CONFIG_XML_URL} ${CONFIG_XML_PATH} /END
       Pop $0
       ${If} "$0" == "OK"
       ${AndIf} ${FileExists} "${CONFIG_XML_PATH}"
@@ -648,8 +643,8 @@ Unicode true
         nsisXML::select "${CONFIG_XML_VERSION_XPATH}"
         nsisXML::getText
         ${IfNot} "$3" == "${VERSION}"
-          MessageBox MB_YESNO "$(UPDATE_AVAILABLE_TEXT)" /SD IDYES IDNO end
-          inetc::get /WEAKSECURITY /POPUP /CAPTION "Downloading updates..." "${RELEASE_URL_PART}v$3/${OUT_FILE_NAME}_$3.exe" "$EXEDIR\${OUT_FILE_NAME}_$3.exe" /END
+          MessageBox MB_YESNO "${UPDATE_AVAILABLE_TEXT}" /SD IDYES IDNO end
+          inetc::get /WEAKSECURITY /CAPTION "Auto Update" /BANNER "Downloading updates..." "${RELEASE_URL_PART}v$3/${OUT_FILE_NAME}_$3.exe" "$EXEDIR\${OUT_FILE_NAME}_$3.exe" /END
           Pop $0
           ${If} "$0" == "OK"
             Exec '"$EXEDIR\${OUT_FILE_NAME}_$3.exe" --self-update="1" --old-file-path="$EXEPATH"'
