@@ -641,13 +641,13 @@ Unicode true
       Pop $0
       ${If} "$0" == "OK"
       ${AndIf} ${FileExists} "${INST_CFG_PATH}"
-        ReadINIStr $0 "${INST_CFG_PATH}" "SETTINGS" "version"
-        ${IfNot} "$0" == "${VERSION}"
+        ReadINIStr $1 "${INST_CFG_PATH}" "SETTINGS" "version"
+        ${IfNot} "$1" == "${VERSION}"
           MessageBox MB_YESNO "${UPDATE_AVAILABLE_TEXT}" /SD IDYES IDNO end
-          inetc::get /WEAKSECURITY /CAPTION "Auto Update" /BANNER "Downloading updates..." "${RELEASE_URL_PART}v$3/${OUT_FILE_NAME}_$3.exe" "$EXEDIR\${OUT_FILE_NAME}_$3.exe" /END
+          inetc::get /WEAKSECURITY /CAPTION "Auto Update" /BANNER "Downloading updates..." "${RELEASE_URL_PART}v$1/${OUT_FILE_NAME}_$1.exe" "$EXEDIR\${OUT_FILE_NAME}_$1.exe" /END
           Pop $0
           ${If} "$0" == "OK"
-            Exec '"$EXEDIR\${OUT_FILE_NAME}_$3.exe" --self-update="1" --old-file-path="$EXEPATH"'
+            Exec '"$EXEDIR\${OUT_FILE_NAME}_$1.exe" --self-update="1" --old-file-path="$EXEPATH"'
             Quit
           ${EndIf}
         ${EndIf}
