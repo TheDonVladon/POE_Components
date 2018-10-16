@@ -150,9 +150,8 @@ Unicode true
   !define LOGS_DIR "${COMPONENTS_DIR}\logs"
   !define ERROR_LOG_PATH "${LOGS_DIR}\errors.log"
 
-  !define CONFIG_XML_URL "https://raw.githubusercontent.com/TheDonVladon/POE_Components/master/config.xml"
-  !define CONFIG_XML_PATH "$PLUGINSDIR\config.xml"
-  !define CONFIG_XML_VERSION_XPATH "POE_Components/settings/version"
+  !define INST_CFG_URL "https://raw.githubusercontent.com/TheDonVladon/POE_Components/master/config.ini"
+  !define INST_CFG_PATH "$PLUGINSDIR\config.ini"
   !define RELEASE_URL_PART "https://github.com/TheDonVladon/POE_Components/releases/download/"
 
 ; --------------------------------
@@ -569,7 +568,11 @@ Unicode true
     ; This folder is automatically deleted when the installer exits
     InitPluginsDir
     ; Enable security protocols (inetc plugin sends requests via IE, most of the websites requires TLS 1.2 security protocol)
-    WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Internet Settings" "SecureProtocols" 0x00000aa0
+    ReadRegDWORD $0 HKCU "Software\Microsoft\Windows\CurrentVersion\Internet Settings" "SecureProtocols"
+    ${IfNot} $0 = 2720
+      WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Internet Settings" "SecureProtocols" 0x00000aa0
+    ${EndIf}
+
     Call SelfUpdate
     ; Select language
     !insertmacro MUI_LANGDLL_DISPLAY
@@ -634,15 +637,12 @@ Unicode true
       ${EndIf}
     ; Check for updates
     ${Else}
-      inetc::get /WEAKSECURITY /CAPTION "Auto Update" /BANNER "Checking for updates..." ${CONFIG_XML_URL} ${CONFIG_XML_PATH} /END
+      inetc::get /WEAKSECURITY /CAPTION "Auto Update" /BANNER "Checking for updates..." ${INST_CFG_URL} ${INST_CFG_PATH} /END
       Pop $0
       ${If} "$0" == "OK"
-      ${AndIf} ${FileExists} "${CONFIG_XML_PATH}"
-        nsisXML::create
-        nsisXML::load "${CONFIG_XML_PATH}"
-        nsisXML::select "${CONFIG_XML_VERSION_XPATH}"
-        nsisXML::getText
-        ${IfNot} "$3" == "${VERSION}"
+      ${AndIf} ${FileExists} "${INST_CFG_PATH}"
+        ReadINIStr $0 "${INST_CFG_PATH}" "SETTINGS" "version"
+        ${IfNot} "$0" == "${VERSION}"
           MessageBox MB_YESNO "${UPDATE_AVAILABLE_TEXT}" /SD IDYES IDNO end
           inetc::get /WEAKSECURITY /CAPTION "Auto Update" /BANNER "Downloading updates..." "${RELEASE_URL_PART}v$3/${OUT_FILE_NAME}_$3.exe" "$EXEDIR\${OUT_FILE_NAME}_$3.exe" /END
           Pop $0
@@ -779,7 +779,7 @@ Unicode true
   Function FinishPageShow
     FindWindow $varHwnd "#32770" "" $HWNDPARENT
     GetDlgItem $varHwnd $varHwnd 1204
-    ${NSD_OnClick} $0 onWikiLinkClick
+    ${NSD_OnClick} $varHwnd onWikiLinkClick
   FunctionEnd
 
   Function CreateDesktopShortcut
