@@ -65,9 +65,10 @@ Unicode true
 ; --------------------------------
 ; Variables
 
-  Var varPOEProfileDir
+  Var varPoeProfileDir
   Var varDialog
   Var varHwnd
+  Var varPoeExe
 
 ; --------------------------------
 ; Macro's
@@ -139,8 +140,9 @@ Unicode true
   !define DESKTOP_SHORTCUT_PATH "$DESKTOP\Path of Exile With Components.lnk"
   
   !define POE_CONFIG_INI "production_Config.ini"
-  !define POE_EXE "PathOfExile.exe"
   !define POE_PROFILE_DIR "My Games\Path of Exile"
+  ; For Steam the path is using SteamPath registry
+  !define POE_STEAM_DIR "\steamapps\common\Path of Exile"
   
   !define DEFAULT_INSTDIR_NAME "POE_Components"
   !define COMPONENTS_DIR "$INSTDIR\Components"
@@ -217,7 +219,8 @@ Unicode true
   !define MUI_PAGE_HEADER_SUBTEXT "$(MUI_PAGE_HEADER_SUBTEXT)"
   !define MUI_DIRECTORYPAGE_TEXT_TOP "$(MUI_DIRECTORYPAGE_TEXT_TOP)"
   !insertmacro MUI_PAGE_DIRECTORY
-
+  
+  !define MUI_PAGE_CUSTOMFUNCTION_SHOW SetInstDir
   !insertmacro MUI_PAGE_INSTFILES
 
   Page custom LootFiltersPage LootFiltersPageLeave
@@ -477,7 +480,7 @@ Unicode true
               ; Folder found
               ${IfNot} "$1" == ""
                 DetailPrint "Searching unzipped folder status: $1"
-                DetailPrint "Copy .filter files from ${LootFilters_NeverSink_DIR}\$1 to $varPOEProfileDir"
+                DetailPrint "Copy .filter files from ${LootFilters_NeverSink_DIR}\$1 to $varPoeProfileDir"
                 
                 ${WriteFileList} "${LootFilters_FILE_LIST_PATH}" "*.filter" "${LootFilters_NeverSink_DIR}\$1" 
                 FileOpen $0 "${LootFilters_FILE_LIST_PATH}" r
@@ -486,7 +489,7 @@ Unicode true
                   FileRead $0 $2
                   ${Trim} $2 $2
                   ${IfNot} "$2" == ""
-                    ${If} ${FileExists} "$varPOEProfileDir\$2"
+                    ${If} ${FileExists} "$varPoeProfileDir\$2"
                       SetErrors
                       MessageBox MB_YESNO|MB_ICONQUESTION  "$(LOOTFILTER_NEVERSINK_EXISTS_TEXT)" /SD IDYES IDNO end
                     ${EndIf}
@@ -494,7 +497,7 @@ Unicode true
                 ${LoopUntil} 1 = 0
                 FileClose $0
 
-                CopyFiles "${LootFilters_NeverSink_DIR}\$1\*.filter" $varPOEProfileDir
+                CopyFiles "${LootFilters_NeverSink_DIR}\$1\*.filter" $varPoeProfileDir
               ${EndIf}
             ; Unzip Error
             ${Else}
@@ -571,18 +574,34 @@ Unicode true
     ${EndIf}
 
     ; Set default install directory
+    ; Check if the game is installed via GGG
+    ; @TODO adjust $INSTDIR to include ${DEFAULT_INSTDIR_NAME} before installation begins
     ReadRegStr $0 HKCU "Software\GrindingGearGames\Path of Exile" InstallLocation
-    ${If} "$0" == ""
-      MessageBox MB_OK "$(POE_NOTFOUND_ERROR_TEXT)" /SD IDOK
-      Quit
+    ${IfNot} "$0" == ""
+      StrCpy $varPoeExe "PathOfExile.exe"
+      StrCpy $INSTDIR "$0"
+    ${Else}
+      ; Check if the steam is installed
+      ; Get Steam path
+      ReadRegStr $0 HKCU "Software\Valve\Steam" SteamPath
+      ${StrRep} $0 $0 "/" "\"
+      ; Is POE is installed with via steam
+      ${IfNot} "$0" == ""
+      ${AndIf} ${FileExists} "$0${POE_STEAM_DIR}"
+        StrCpy $0 "$0${POE_STEAM_DIR}"
+        StrCpy $varPoeExe "PathOfExileSteam.exe"
+        StrCpy $INSTDIR "$0"
+      ${Else}
+        MessageBox MB_OK "$(POE_NOTFOUND_ERROR_TEXT)" /SD IDOK
+        Quit
+      ${EndIf}
     ${Endif}
-    StrCpy $INSTDIR $0POE_Components
 
     ; Get My Documents folder path
     ReadRegStr $0 HKCU "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders" Personal
     ; Assign valid userprofile dir for POE
-    StrCpy $varPOEProfileDir "$0\${POE_PROFILE_DIR}"
-    ${IfNot} ${FileExists} "$varPOEProfileDir"
+    StrCpy $varPoeProfileDir "$0\${POE_PROFILE_DIR}"
+    ${IfNot} ${FileExists} "$varPoeProfileDir"
       MessageBox MB_OK "$(POE_PROFILE_NOTFOUND_ERROR_TEXT)" /SD IDOK
       Quit
     ${EndIf}
@@ -611,20 +630,17 @@ Unicode true
         FileWrite $0 'for %%f in ("${AHK_SCRIPTS_DIR}\*.lnk") do %%f$\r$\n'
       FileWrite $0 ')$\r$\n'
 
-      FileWrite $0 'start "Path of Exile" "$INSTDIR\..\${POE_EXE}"$\r$\n'
+      FileWrite $0 'start "Path of Exile" "$INSTDIR\..\$varPoeExe"$\r$\n'
       
       FileWrite $0 'exit'
     FileClose $0
   FunctionEnd
   
   Function .onVerifyInstDir
-    ; Make sure that chosen installation directory or its parent has ${POE_EXE}
-    IfFileExists "$INSTDIR\${POE_EXE}" change_instdir
-      IfFileExists "$INSTDIR\..\${POE_EXE}" end
+    ; Make sure that chosen installation directory has $varPoeExe
+    ${IfNot} ${FileExists} "$INSTDIR\$varPoeExe"
         Abort
-    change_instdir:
-      StrCpy $INSTDIR "$INSTDIR\${DEFAULT_INSTDIR_NAME}"
-    end:
+    ${EndIf}
   FunctionEnd
 
   Function .onGUIEnd
@@ -648,7 +664,7 @@ Unicode true
     ${NSD_CB_AddString} $varHwnd "None"
     ${NSD_CB_AddString} $varHwnd "Default"
 
-    FindFirst $0 $1 "$varPOEProfileDir\*.filter"
+    FindFirst $0 $1 "$varPoeProfileDir\*.filter"
     ; Store $R0 in stack
     Push $R0
     ; Assign new value
@@ -670,7 +686,7 @@ Unicode true
     FindClose $0
     
     ; Preselect selected in-game filter
-    ReadINIStr $0 "$varPOEProfileDir\${POE_CONFIG_INI}" "UI" "item_filter"
+    ReadINIStr $0 "$varPoeProfileDir\${POE_CONFIG_INI}" "UI" "item_filter"
     ${If} "$0" == "<default>"
       StrCpy $0 "Default"
     ${EndIf}
@@ -704,15 +720,15 @@ Unicode true
     ${EndIf}
     ${IfNot} "$0" == ""
       DetailPrint "Adding $0 to the Path of Exile."
-      WriteINIStr "$varPOEProfileDir\${POE_CONFIG_INI}" "UI" "item_filter" "$0"
-      WriteINIStr "$varPOEProfileDir\${POE_CONFIG_INI}" "UI" "item_filter_loaded_successfully" "$0"
+      WriteINIStr "$varPoeProfileDir\${POE_CONFIG_INI}" "UI" "item_filter" "$0"
+      WriteINIStr "$varPoeProfileDir\${POE_CONFIG_INI}" "UI" "item_filter_loaded_successfully" "$0"
       MessageBox MB_OK "$1 $(LOOTFILTER_SELECTED_TEXT)"
     ${EndIf}
   FunctionEnd
 
   Function SelfUpdate
     ; Check execution parameters
-    ; Parametersare used upon installer selfupdate
+    ; Parameters are used upon installer selfupdate
     ${GetParameters} $0
     ClearErrors
     ${GetOptions} $0 "--self-update=" $R0
@@ -764,7 +780,11 @@ Unicode true
 
   Function CreateDesktopShortcut
     SetOutPath "$INSTDIR\.."
-    CreateShortCut "${DESKTOP_SHORTCUT_PATH}" "${BATCH_PATH}" "" "$INSTDIR\..\${POE_EXE}"
+    CreateShortCut "${DESKTOP_SHORTCUT_PATH}" "${BATCH_PATH}" "" "$INSTDIR\..\$varPoeExe"
+  FunctionEnd
+
+  Function SetInstDir
+    StrCpy $INSTDIR "$INSTDIR\${DEFAULT_INSTDIR_NAME}"
   FunctionEnd
 
   Function LogDetailPrint
