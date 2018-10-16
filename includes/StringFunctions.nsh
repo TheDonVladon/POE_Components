@@ -1,3 +1,10 @@
+; Remove string from another string
+;
+; Usage:
+;
+; ${StrStrip}  [string] [in_string] [out_var]
+; ${StrStrip}  "ja" "jaja la" $R0 # $R0 == " la"
+;
 Function StrStrip
 Exch $R0 #string
 Exch
@@ -75,9 +82,9 @@ FunctionEnd
 ; This function searches and replaces all occurrences of a substring in a string.
 ;
 ; Usage:
-; ${StrRep} $0 "This is just an example" "just " ""
-; $0 = "This is an example"
 ;
+; ${StrRep} $0 "This is just an example" "just " "" # $0 = "This is an example"
+; 
 !define StrRep "!insertmacro StrRep"
 !macro StrRep output string old new
     Push `${string}`

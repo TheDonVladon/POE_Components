@@ -1,3 +1,12 @@
+; This function makes a list of files in a directory.
+;
+; Usage:
+;
+; Push "$INSTDIR\output.txt" # output file
+; Push "*.ext" # filter
+; Push "C:\A-Folder" # folder to search in
+; Call MakeFileList
+;
 Function MakeFileList
 Exch $R0 #path
 Exch

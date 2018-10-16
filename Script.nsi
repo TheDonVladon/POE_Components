@@ -41,7 +41,7 @@ Unicode true
 
 ; General
   
-  !define VERSION "0.9.0"
+  !define VERSION "0.9.1"
   !define OUT_FILE_NAME "POE_Components"
 
   ; Setup name
@@ -207,7 +207,8 @@ Unicode true
 
 ; --------------------------------
 ; Pages
-
+  
+  !define MUI_PAGE_CUSTOMFUNCTION_PRE WelcomePagePre
   !define MUI_PAGE_CUSTOMFUNCTION_SHOW WelcomePageShow
   !insertmacro MUI_PAGE_WELCOME
 
@@ -220,7 +221,7 @@ Unicode true
   !define MUI_DIRECTORYPAGE_TEXT_TOP "$(MUI_DIRECTORYPAGE_TEXT_TOP)"
   !insertmacro MUI_PAGE_DIRECTORY
   
-  !define MUI_PAGE_CUSTOMFUNCTION_SHOW SetInstDir
+  !define MUI_PAGE_CUSTOMFUNCTION_PRE SetInstDir
   !insertmacro MUI_PAGE_INSTFILES
 
   Page custom LootFiltersPage LootFiltersPageLeave
@@ -245,10 +246,12 @@ Unicode true
   LangString MUI_PAGE_HEADER_SUBTEXT ${LANG_ENGLISH} "Choose the Path of Exile folder in which POE Components will be installed."
   LangString MUI_PAGE_HEADER_SUBTEXT ${LANG_RUSSIAN} "Укажите папку Path of Exile, в которкую будут утсановлены POE Components."
 
-  LangString MUI_DIRECTORYPAGE_TEXT_TOP ${LANG_ENGLISH} "Setup will install POE Components in the following folder. To install in a different folder, click Browse and select another folder. \
- Click install to start the installation.$\r$\n$\r$\nIn case if the install button is not clickable, make sure that you have chosen a folder where Path of Exile is installed."
-  LangString MUI_DIRECTORYPAGE_TEXT_TOP ${LANG_RUSSIAN} "Программа установки установит POE Components в следующую папку. Чтобы установить в другую папку, нажмите 'Обзор' и выберите другую папку. \
-  Нажмите 'Установить', чтобы начать утсановку.$\r$\n$\r$\nВ случае, если кнопка 'Установить' недоступна, убедитесь, что вы выбрали папку, в которой установлена Path of Exile."
+  LangString MUI_DIRECTORYPAGE_TEXT_TOP ${LANG_ENGLISH} "Setup will install POE Components in the Path of Exile folder. To select the Path of Exile folder, click Browse and select a folder. \
+ Click Install to start the installation.$\r$\n$\r$\nIn case if the Install button is not clickable, make sure that you have chosen a folder where Path of Exile game is installed. \
+  For Steam users the Path of Exile game is located in the following folder: Steam\steamapps\common\Path of Exile"
+  LangString MUI_DIRECTORYPAGE_TEXT_TOP ${LANG_RUSSIAN} "Программа установки установит POE Components в Path of Exile папку. Чтобы выбрать другую папку, нажмите 'Обзор' и выберите папку. \
+  Нажмите 'Установить', чтобы начать установку.$\r$\n$\r$\nВ случае, если кнопка 'Установить' недоступна, убедитесь, что выбрана папка, в которой установлена игра Path of Exile. \
+  Для пользователей Steam игра Path of Exile находится в следующей папке: Steam\steamapps\common\Path of Exile"
 
   LangString MUI_INNERTEXT_LICENSE_TOP ${LANG_RUSSIAN} "Для перемещения по тексту используйте клавиши 'PageUp' и 'PageDown'."
   LangString MUI_INNERTEXT_LICENSE_BOTTOM ${LANG_RUSSIAN} "Если вы принимаете условия соглашения, нажмите кнопку 'Принимаю'. Чтобы установить программу, необходимо принять соглашение."
@@ -289,7 +292,6 @@ Unicode true
   LangString CREATE_SHORTCUT_CHECKBOX_TEXT ${LANG_RUSSIAN} "Создать ярлык на рабочем столе"
 
   LangString UPDATE_AVAILABLE_TEXT ${LANG_ENGLISH} "A newer version for POE Components is available.$\r$\nUpdate POE Components?"
-  LangString UPDATE_AVAILABLE_TEXT ${LANG_RUSSIAN} "Доступна новая версия для POE Components.$\r$\nОбновить POE Components?"
 
 ; --------------------------------
 ; Installer Sections
@@ -558,6 +560,8 @@ Unicode true
     ; This folder is automatically deleted when the installer exits
     InitPluginsDir
 
+    Call SelfUpdate
+
     ; Language selection
     Push ""
     Push ${LANG_ENGLISH}
@@ -572,41 +576,6 @@ Unicode true
     ${If} $LANGUAGE == "cancel"
       Quit
     ${EndIf}
-
-    ; Set default install directory
-    ; Check if the game is installed via GGG
-    ; @TODO adjust $INSTDIR to include ${DEFAULT_INSTDIR_NAME} before installation begins
-    ReadRegStr $0 HKCU "Software\GrindingGearGames\Path of Exile" InstallLocation
-    ${IfNot} "$0" == ""
-      StrCpy $varPoeExe "PathOfExile.exe"
-      StrCpy $INSTDIR "$0"
-    ${Else}
-      ; Check if the steam is installed
-      ; Get Steam path
-      ReadRegStr $0 HKCU "Software\Valve\Steam" SteamPath
-      ${StrRep} $0 $0 "/" "\"
-      ; Is POE is installed with via steam
-      ${IfNot} "$0" == ""
-      ${AndIf} ${FileExists} "$0${POE_STEAM_DIR}"
-        StrCpy $0 "$0${POE_STEAM_DIR}"
-        StrCpy $varPoeExe "PathOfExileSteam.exe"
-        StrCpy $INSTDIR "$0"
-      ${Else}
-        MessageBox MB_OK "$(POE_NOTFOUND_ERROR_TEXT)" /SD IDOK
-        Quit
-      ${EndIf}
-    ${Endif}
-
-    ; Get My Documents folder path
-    ReadRegStr $0 HKCU "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders" Personal
-    ; Assign valid userprofile dir for POE
-    StrCpy $varPoeProfileDir "$0\${POE_PROFILE_DIR}"
-    ${IfNot} ${FileExists} "$varPoeProfileDir"
-      MessageBox MB_OK "$(POE_PROFILE_NOTFOUND_ERROR_TEXT)" /SD IDOK
-      Quit
-    ${EndIf}
-
-    Call SelfUpdate
   FunctionEnd
 
   Function .onInstSuccess
@@ -649,6 +618,86 @@ Unicode true
 
   Function onWikiLinkClick
     ExecShell "open" "$(WIKI_URL)"
+  FunctionEnd
+
+  Function SelfUpdate
+    ; Check execution parameters
+    ; Parameters are used upon installer selfupdate
+    ${GetParameters} $0
+    ClearErrors
+    ${GetOptions} $0 "--self-update=" $R0
+    ${GetOptions} $0 "--old-file-path=" $R1
+    ; Selfupdate was executed
+    ${IfNot} ${Errors}
+    ${AndIf} "$R0" == "1"
+    ${AndIf} ${FileExists} "$R1"
+      ; Delete old installer
+      ${If} ${FileExists} "$R1"
+        Delete "$R1"
+      ${EndIf}
+    ; Check for updates
+    ${Else}
+      inetc::get ${CONFIG_XML_URL} ${CONFIG_XML_PATH} /POPUP
+      Pop $0
+      ${If} "$0" == "OK"
+      ${AndIf} ${FileExists} "${CONFIG_XML_PATH}"
+        nsisXML::create
+        nsisXML::load "${CONFIG_XML_PATH}"
+        nsisXML::select "${CONFIG_XML_VERSION_XPATH}"
+        nsisXML::getText
+        ${IfNot} "$3" == "${VERSION}"
+          MessageBox MB_YESNO "$(UPDATE_AVAILABLE_TEXT)" /SD IDYES IDNO end
+          inetc::get "${RELEASE_URL_PART}v$3/${OUT_FILE_NAME}_$3.exe" "$EXEDIR\${OUT_FILE_NAME}_$3.exe" /POPUP
+          Pop $0
+          ${If} "$0" == "OK"
+            Exec '"$EXEDIR\${OUT_FILE_NAME}_$3.exe" --self-update="1" --old-file-path="$EXEPATH"'
+            Quit
+          ${EndIf}
+        ${EndIf}
+      ${EndIf}
+    ${EndIf}
+    end:
+  FunctionEnd
+  
+  Function WelcomePagePre
+    ; Set default install directory
+    ; Check if the game is installed via GGG
+    ReadRegStr $0 HKCU "Software\GrindingGearGames\Path of Exile" InstallLocation
+    ${IfNot} "$0" == ""
+      StrCpy $varPoeExe "PathOfExile.exe"
+      StrCpy $INSTDIR "$0"
+    ${Else}
+      ; Check if the steam is installed
+      ; Get Steam path
+      ReadRegStr $0 HKCU "Software\Valve\Steam" SteamPath
+      ${StrRep} $0 $0 "/" "\"
+      ; Is POE is installed with via steam
+      ${IfNot} "$0" == ""
+      ${AndIf} ${FileExists} "$0${POE_STEAM_DIR}"
+        StrCpy $0 "$0${POE_STEAM_DIR}"
+        StrCpy $varPoeExe "PathOfExileSteam.exe"
+        StrCpy $INSTDIR "$0"
+      ${Else}
+        MessageBox MB_OK "$(POE_NOTFOUND_ERROR_TEXT)" /SD IDOK
+        Quit
+      ${EndIf}
+    ${Endif}
+
+    ; Get My Documents folder path
+    ReadRegStr $0 HKCU "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders" Personal
+    ; Assign valid userprofile dir for POE
+    StrCpy $varPoeProfileDir "$0\${POE_PROFILE_DIR}"
+    ${IfNot} ${FileExists} "$varPoeProfileDir"
+      MessageBox MB_OK "$(POE_PROFILE_NOTFOUND_ERROR_TEXT)" /SD IDOK
+      Quit
+    ${EndIf}
+  FunctionEnd
+
+  Function WelcomePageShow
+    ${NSD_CreateLink} 180 285 120 15 "POE Components WIKI"
+    Pop $varHwnd
+    SetCtlColors $varHwnd "0000FF" "FFFFFF"
+    ${NSD_OnClick} $varHwnd onWikiLinkClick
   FunctionEnd
   
   Function LootFiltersPage
@@ -705,6 +754,7 @@ Unicode true
     EnableWindow $0 0
 
     nsDialogs::Show
+    ; This part is triggered after page_leave
     ${NSD_FreeImage} $1
   FunctionEnd
 
@@ -724,57 +774,12 @@ Unicode true
       WriteINIStr "$varPoeProfileDir\${POE_CONFIG_INI}" "UI" "item_filter_loaded_successfully" "$0"
       MessageBox MB_OK "$1 $(LOOTFILTER_SELECTED_TEXT)"
     ${EndIf}
-  FunctionEnd
-
-  Function SelfUpdate
-    ; Check execution parameters
-    ; Parameters are used upon installer selfupdate
-    ${GetParameters} $0
-    ClearErrors
-    ${GetOptions} $0 "--self-update=" $R0
-    ${GetOptions} $0 "--old-file-path=" $R1
-    ; Selfupdate was executed
-    ${IfNot} ${Errors}
-    ${AndIf} "$R0" == "1"
-    ${AndIf} ${FileExists} "$R1"
-      ; Delete old installer
-      ${If} ${FileExists} "$R1"
-        Delete "$R1"
-      ${EndIf}
-    ; Check for updates
-    ${Else}
-      inetc::get ${CONFIG_XML_URL} ${CONFIG_XML_PATH} /END
-      Pop $0
-      ${If} "$0" == "OK"
-      ${AndIf} ${FileExists} "${CONFIG_XML_PATH}"
-        nsisXML::create
-        nsisXML::load "${CONFIG_XML_PATH}"
-        nsisXML::select "${CONFIG_XML_VERSION_XPATH}"
-        nsisXML::getText
-        ${IfNot} "$3" == "${VERSION}"
-          MessageBox MB_YESNO "$(UPDATE_AVAILABLE_TEXT)" /SD IDYES IDNO end
-          inetc::get "${RELEASE_URL_PART}v$3/${OUT_FILE_NAME}_$3.exe" "$EXEDIR\${OUT_FILE_NAME}_$3.exe" /END
-          Pop $0
-          ${If} "$0" == "OK"
-            Exec '"$EXEDIR\${OUT_FILE_NAME}_$3.exe" --self-update="1" --old-file-path="$EXEPATH"'
-            Quit
-          ${EndIf}
-        ${EndIf}
-      ${EndIf}
-    ${EndIf}
-    end:
-  FunctionEnd
-
-  Function WelcomePageShow
-    ${NSD_CreateLink} 180 285 120 15 "POE Components WIKI"
-    Pop $0
-    SetCtlColors $0 "0000FF" "FFFFFF"
-    ${NSD_OnClick} $0 onWikiLinkClick
+    Pop $1
   FunctionEnd
 
   Function FinishPageShow
-    FindWindow $0 "#32770" "" $HWNDPARENT
-    GetDlgItem $0 $0 1204
+    FindWindow $varHwnd "#32770" "" $HWNDPARENT
+    GetDlgItem $varHwnd $varHwnd 1204
     ${NSD_OnClick} $0 onWikiLinkClick
   FunctionEnd
 

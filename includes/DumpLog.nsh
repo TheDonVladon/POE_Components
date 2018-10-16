@@ -1,3 +1,12 @@
+; This function will dump the log of the installer (installer details) to a file of your choice. 
+; This function will not work when your installer is run in silent mode.
+;
+; Usage:
+;
+; StrCpy $0 "$EXEDIR\install.log"
+; Push $0
+; Call DumpLog
+;
 Function DumpLog # Written by KiCHiK, modified by Jim Park
   Exch $5
   Push $0
