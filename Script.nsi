@@ -295,9 +295,9 @@ Unicode true
   LangString DETAILS_SAVED_TEXT ${LANG_ENGLISH} "Details have been saved to"
   LangString DETAILS_SAVED_TEXT ${LANG_RUSSIAN} "Детали сохранились в"
   LangString ABORT_ACTION_TEXT ${LANG_ENGLISH} "Click Abort to quit installation."
-  LangString ABORT_ACTION_TEXT ${LANG_RUSSIAN} "Нажмите 'Отменить' (Abort), чтобы закончить установку."
+  LangString ABORT_ACTION_TEXT ${LANG_RUSSIAN} "Нажмите 'Прервать' (Abort), чтобы закончить установку."
   LangString RETRY_ACTION_TEXT ${LANG_ENGLISH} "Click Retry to try again."
-  LangString RETRY_ACTION_TEXT ${LANG_RUSSIAN} "Нажмите 'Повторить' (Retry), чтобы повторить попытку."
+  LangString RETRY_ACTION_TEXT ${LANG_RUSSIAN} "Нажмите 'Повтор' (Retry), чтобы повторить попытку."
   LangString IGNORE_ACTION_TEXT ${LANG_ENGLISH} "Click Ignore to ignore AutoHotkey installation."
   LangString IGNORE_ACTION_TEXT ${LANG_RUSSIAN} "Нажмите 'Пропустить' (Ignore), чтобы продолжить установку."
 
