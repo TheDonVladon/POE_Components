@@ -314,7 +314,7 @@ Unicode true
     retry:
       ClearErrors
       DetailPrint "Downloading AutoHotkey.exe from ${AHK_URL} to ${AHK_EXE_PATH}"
-      inetc::get ${AHK_URL} ${AHK_EXE_PATH} /END
+      inetc::get /WEAKSECURITY ${AHK_URL} ${AHK_EXE_PATH} /END
       ; Get status
       Pop $0
       DetailPrint "Download Status: $0"
@@ -344,7 +344,7 @@ Unicode true
       retry:
         ClearErrors
         DetailPrint "Downloading Logout Macro from ${AHK_LogoutMacro_URL}"
-        inetc::get ${AHK_LogoutMacro_URL} ${AHK_LogoutMacro_SCRIPT_PATH} /END
+        inetc::get /WEAKSECURITY ${AHK_LogoutMacro_URL} ${AHK_LogoutMacro_SCRIPT_PATH} /END
         ; Get status
         Pop $0
         DetailPrint "Download Status: $0"
@@ -377,7 +377,7 @@ Unicode true
       retry:
         ClearErrors
         DetailPrint "Downloading TradeMacro from ${AHK_TradeMacro_URL}"
-        inetc::get ${AHK_TradeMacro_URL} ${AHK_TradeMacro_ZIP_PATH} /END
+        inetc::get /WEAKSECURITY ${AHK_TradeMacro_URL} ${AHK_TradeMacro_ZIP_PATH} /END
         ; Get status
         Pop $0
         DetailPrint "Download Status: $0"
@@ -449,7 +449,7 @@ Unicode true
       retry:
         ClearErrors
         DetailPrint "Downloading NeverSink loot filter from ${LootFilters_NeverSink_URL} to ${LootFilters_NeverSink_DIR}"
-        inetc::get ${LootFilters_NeverSink_URL} ${LootFilters_NeverSink_ZIP_PATH} /END
+        inetc::get /WEAKSECURITY ${LootFilters_NeverSink_URL} ${LootFilters_NeverSink_ZIP_PATH} /END
         ; Get status
         Pop $0
         DetailPrint "Download Status: $0"
@@ -532,7 +532,7 @@ Unicode true
     retry:
       ClearErrors
       DetailPrint "Downloading AutoHotkey.exe from ${AHK_URL} to ${AHK_EXE_PATH}"
-      inetc::get ${POB_URL} ${POB_EXE_PATH} /END
+      inetc::get /WEAKSECURITY ${POB_URL} ${POB_EXE_PATH} /END
       ; Get status
       Pop $0
       DetailPrint "Download Status: $0"
@@ -556,6 +556,8 @@ Unicode true
 ; Functions
   
   Function .onInit
+    ; Set default language
+    StrCpy $LANGUAGE ${LANG_ENGLISH}
     ; $PLUGINSDIR is the path to a temporary folder created upon the first usage of a plug-in or a call to InitPluginsDir 
     ; This folder is automatically deleted when the installer exits
     InitPluginsDir
@@ -637,7 +639,7 @@ Unicode true
       ${EndIf}
     ; Check for updates
     ${Else}
-      inetc::get ${CONFIG_XML_URL} ${CONFIG_XML_PATH} /POPUP
+      inetc::get /WEAKSECURITY /POPUP /CAPTION "Checking for updates..." ${CONFIG_XML_URL} ${CONFIG_XML_PATH} /END
       Pop $0
       ${If} "$0" == "OK"
       ${AndIf} ${FileExists} "${CONFIG_XML_PATH}"
@@ -647,7 +649,7 @@ Unicode true
         nsisXML::getText
         ${IfNot} "$3" == "${VERSION}"
           MessageBox MB_YESNO "$(UPDATE_AVAILABLE_TEXT)" /SD IDYES IDNO end
-          inetc::get "${RELEASE_URL_PART}v$3/${OUT_FILE_NAME}_$3.exe" "$EXEDIR\${OUT_FILE_NAME}_$3.exe" /POPUP
+          inetc::get /WEAKSECURITY /POPUP /CAPTION "Downloading updates..." "${RELEASE_URL_PART}v$3/${OUT_FILE_NAME}_$3.exe" "$EXEDIR\${OUT_FILE_NAME}_$3.exe" /END
           Pop $0
           ${If} "$0" == "OK"
             Exec '"$EXEDIR\${OUT_FILE_NAME}_$3.exe" --self-update="1" --old-file-path="$EXEPATH"'
@@ -744,10 +746,12 @@ Unicode true
     ${NSD_CreateLabel} 0 60 100% 20 "$(LOOTFILTER_NOFILTER_NOTICE_TEXT)"
     Pop $0
     ${NSD_AddStyle} $0 ${SS_Left}
-
+    
+    SetOutPath "$PLUGINSDIR"
+    File "$EXECDIR\..\assets\images\LootFilters-disabled.bmp"
     ${NSD_CreateBitmap} 0 80 100% 100% ""
     Pop $0
-    ${NSD_SetStretchedImage} $0 "$EXEDIR\..\assets\images\LootFilters-disabled.bmp" $1
+    ${NSD_SetStretchedImage} $0 "$PLUGINSDIR\LootFilters-disabled.bmp" $1
 
     ; Disable cancel button
     GetDlgItem $0 $HWNDPARENT 2
@@ -761,11 +765,11 @@ Unicode true
   Function LootFiltersPageLeave
     Push $1
     ${NSD_GetText} $varHwnd $0
-    ; Remove .filter from string
-    ${StrStrip} ".filter" $0 $0
     StrCpy $1 $0
+    ; Remove .filter from string
+    ${StrStrip} ".filter" $1 $1
     ; Edit production_Config.ini file and set selected filter
-    ${If} "$0" == "Default"
+    ${If} "$1" == "Default"
       StrCpy $0 "<default>"
     ${EndIf}
     ${IfNot} "$0" == ""
