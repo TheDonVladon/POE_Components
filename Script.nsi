@@ -41,7 +41,7 @@ Unicode true
 
 ; General
   
-  !define VERSION "1.0.1"
+  !define VERSION "1.0.0"
   !define OUT_FILE_NAME "POE_Components"
 
   ; Setup name
