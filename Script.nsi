@@ -41,7 +41,7 @@ Unicode true
 
 ; General
   
-  !define VERSION "1.0.0"
+  !define VERSION "1.0.1"
   !define OUT_FILE_NAME "POE_Components"
 
   ; Setup name
@@ -668,7 +668,7 @@ Unicode true
       ; Get Steam path
       ReadRegStr $0 HKCU "Software\Valve\Steam" SteamPath
       ${StrRep} $0 $0 "/" "\"
-      ; Is POE is installed with via steam
+      ; Is POE is installed via steam
       ${IfNot} "$0" == ""
       ${AndIf} ${FileExists} "$0${POE_STEAM_DIR}"
         StrCpy $0 "$0${POE_STEAM_DIR}"
