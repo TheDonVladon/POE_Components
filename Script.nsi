@@ -638,16 +638,17 @@ Unicode true
       StrCpy $varPoeExe "PathOfExile.exe"
       StrCpy $INSTDIR "$0"
     ${Else}
-      ; Check if the steam is installed
+      ; Check if Steam is installed
       ; Get Steam path
       ReadRegStr $0 HKCU "Software\Valve\Steam" SteamPath
       ${StrRep} $0 $0 "/" "\"
-      ; Is POE is installed via steam
+      ; Check if POE is installed via Steam
       ${IfNot} "$0" == ""
       ${AndIf} ${FileExists} "$0${POE_STEAM_DIR}"
         StrCpy $0 "$0${POE_STEAM_DIR}"
         StrCpy $varPoeExe "PathOfExileSteam.exe"
         StrCpy $INSTDIR "$0"
+      ; The default POE executable was not found
       ${Else}
         MessageBox MB_OK "$(POE_NOTFOUND_ERROR_TEXT)" /SD IDOK
         Quit
