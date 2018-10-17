@@ -135,9 +135,11 @@ Unicode true
 ; --------------------------------
 ; Custom Settings
 
-  !define BATCH_PATH "$INSTDIR\..\Path of Exile With Components.bat"
-  
-  !define DESKTOP_SHORTCUT_PATH "$DESKTOP\Path of Exile With Components.lnk"
+  !define SOURCE_DIR "$INSTDIR\src"
+  !define BATCH_PATH "${SOURCE_DIR}\RunPoe.bat"
+  !define BATCH_SHORTCUT_NAME "Path of Exile With Components.lnk"
+  !define BATCH_SHORTCUT_PATH "${SOURCE_DIR}\${BATCH_SHORTCUT_NAME}"
+  !define DESKTOP_SHORTCUT_PATH "$DESKTOP\${BATCH_SHORTCUT_NAME}"
   
   !define POE_CONFIG_INI "production_Config.ini"
   !define POE_PROFILE_DIR "My Games\Path of Exile"
@@ -147,7 +149,7 @@ Unicode true
   !define DEFAULT_INSTDIR_NAME "POE_Components"
   !define COMPONENTS_DIR "$INSTDIR\Components"
 
-  !define LOGS_DIR "${COMPONENTS_DIR}\logs"
+  !define LOGS_DIR "${SOURCE_DIR}\logs"
   !define ERROR_LOG_PATH "${LOGS_DIR}\errors.log"
 
   !define INST_CFG_URL "https://raw.githubusercontent.com/TheDonVladon/POE_Components/master/config.ini"
@@ -225,6 +227,7 @@ Unicode true
 
   Page custom LootFiltersPage LootFiltersPageLeave
 
+  !define MUI_PAGE_CUSTOMFUNCTION_PRE FinishPagePre
   !define MUI_PAGE_CUSTOMFUNCTION_SHOW FinishPageShow
   !insertmacro MUI_PAGE_FINISH
   
@@ -313,6 +316,8 @@ Unicode true
     CreateDirectory ${AHK_SCRIPTS_DIR}
     ; Required for logging
     CreateDirectory ${LOGS_DIR}
+    ; Required for source files
+    CreateDirectory ${SOURCE_DIR}
     DetailPrint "-------------Create Required Directories End-------------"
   SectionEnd
 
@@ -577,43 +582,12 @@ Unicode true
     ; Select language
     !insertmacro MUI_LANGDLL_DISPLAY
   FunctionEnd
-
-  Function .onInstSuccess
-    ; Create a batch script, which will run all .ahk scripts and .lnk shortcuts, 
-    ; located in the ${AHK_SCRIPTS_DIR}, script will run PathOfExile.exe as well
-    ; Files (.ahk, .lnk) will be executed in case if the AutoHotkey.exe processes amount is less then the files amount in ${AHK_SCRIPTS_DIR}
-    FileOpen $0 "${BATCH_PATH}" w
-      FileWrite $0 '@echo off$\r$\n'
-
-      FileWrite $0 'REM count AutoHotkey processes$\r$\n'
-      FileWrite $0 'for /f %%# in ($\'qprocess^|find /i /c "AutoHotkey.exe"$\') do set pcount=%%#$\r$\n'
-
-      FileWrite $0 'REM count scripts$\r$\n'
-      FileWrite $0 'set fcount=0$\r$\n'
-      FileWrite $0 'for %%f in ("${AHK_SCRIPTS_DIR}\*.ahk") do set /a fcount+=1$\r$\n'
-      FileWrite $0 'for %%f in ("${AHK_SCRIPTS_DIR}\*.lnk") do set /a fcount+=1$\r$\n'
-      
-      FileWrite $0 'REM Run all scripts from ${AHK_SCRIPTS_DIR} folder in case if some of them are not running$\r$\n'
-      FileWrite $0 'if %fcount% NEQ %pcount% ($\r$\n'
-        FileWrite $0 'for %%f in ("${AHK_SCRIPTS_DIR}\*.ahk") do start "Script" "%%f"$\r$\n'
-        FileWrite $0 'for %%f in ("${AHK_SCRIPTS_DIR}\*.lnk") do start "Shortcut" "%%f"$\r$\n'
-      FileWrite $0 ')$\r$\n'
-
-      FileWrite $0 'start "Path of Exile" "$INSTDIR\..\$varPoeExe"$\r$\n'
-      
-      FileWrite $0 'exit'
-    FileClose $0
-  FunctionEnd
   
   Function .onVerifyInstDir
     ; Make sure that chosen installation directory has $varPoeExe
     ${IfNot} ${FileExists} "$INSTDIR\$varPoeExe"
         Abort
     ${EndIf}
-  FunctionEnd
-
-  Function .onGUIEnd
-    RMDir ${LOGS_DIR}
   FunctionEnd
 
   Function onWikiLinkClick
@@ -776,6 +750,36 @@ Unicode true
     Pop $1
   FunctionEnd
 
+  Function FinishPagePre
+    ; Create a batch script, which will run all .ahk scripts and .lnk shortcuts,
+    ; located in the ${AHK_SCRIPTS_DIR}, script will run PathOfExile.exe as well
+    ; Files (.ahk, .lnk) will be executed in case if the AutoHotkey.exe processes amount is less then the files amount in ${AHK_SCRIPTS_DIR}
+    FileOpen $0 "${BATCH_PATH}" w
+      FileWrite $0 '@echo off$\r$\n'
+
+      FileWrite $0 'REM count AutoHotkey processes$\r$\n'
+      FileWrite $0 'for /f %%# in ($\'qprocess^|find /i /c "AutoHotkey.exe"$\') do set pcount=%%#$\r$\n'
+
+      FileWrite $0 'REM count scripts$\r$\n'
+      FileWrite $0 'set fcount=0$\r$\n'
+      FileWrite $0 'for %%f in ("${AHK_SCRIPTS_DIR}\*.ahk") do set /a fcount+=1$\r$\n'
+      FileWrite $0 'for %%f in ("${AHK_SCRIPTS_DIR}\*.lnk") do set /a fcount+=1$\r$\n'
+
+      FileWrite $0 'REM Run all scripts from ${AHK_SCRIPTS_DIR} folder in case if some of them are not running$\r$\n'
+      FileWrite $0 'if %fcount% NEQ %pcount% ($\r$\n'
+        FileWrite $0 'for %%f in ("${AHK_SCRIPTS_DIR}\*.ahk") do start "Script" "%%f"$\r$\n'
+        FileWrite $0 'for %%f in ("${AHK_SCRIPTS_DIR}\*.lnk") do start "Shortcut" "%%f"$\r$\n'
+      FileWrite $0 ')$\r$\n'
+
+      FileWrite $0 'start "Path of Exile" "$INSTDIR\..\$varPoeExe"$\r$\n'
+      FileWrite $0 'exit'
+    FileClose $0
+
+    ; Create a shortcut for a batch script
+    SetOutPath "$INSTDIR\.."
+    CreateShortCut "${BATCH_SHORTCUT_PATH}" "${BATCH_PATH}" "" "$INSTDIR\..\$varPoeExe"
+  FunctionEnd
+
   Function FinishPageShow
     FindWindow $varHwnd "#32770" "" $HWNDPARENT
     GetDlgItem $varHwnd $varHwnd 1204
@@ -783,8 +787,10 @@ Unicode true
   FunctionEnd
 
   Function CreateDesktopShortcut
-    SetOutPath "$INSTDIR\.."
-    CreateShortCut "${DESKTOP_SHORTCUT_PATH}" "${BATCH_PATH}" "" "$INSTDIR\..\$varPoeExe"
+    ${If} ${FileExists} "${DESKTOP_SHORTCUT_PATH}"
+      Delete "${DESKTOP_SHORTCUT_PATH}"
+    ${EndIf}
+    CopyFiles "${BATCH_SHORTCUT_PATH}" "$DESKTOP"
   FunctionEnd
 
   Function SetInstDir
