@@ -17,11 +17,11 @@ POE_Components will work in any Path of Exile version unless some core changes i
 
 ## Features
 * AutoUpdater - download POE_Components once
-* Supports English and Russian languages.
-* Custom shortcut, which runs all scripts and shortcuts placed in POE_Components\Components\AutoHotkey\Scripts as well as game executable - no need to run scripts/tools manually.
+* Supports English and Russian languages
+* Custom shortcut, which runs all scripts and shortcuts placed in POE_Components\Components\AutoHotkey\Scripts as well as game executable - no need to run scripts/tools manually
 * Chosen loot filters will be added to the game automatically - no need (but you can) in moving filter files to the appropriate folder
-* Loot filter selection in the installer - no need (but you can) to select loot filter in-game if selected in the installer.
-* Compatible with GGG and Steam clients.
+* Loot filter selection in the installer - no need (but you can) to select loot filter in-game if selected in the installer
+* Compatible with GGG and Steam clients
 
 ## Components
 * AutoHotkey installer
@@ -29,3 +29,10 @@ POE_Components will work in any Path of Exile version unless some core changes i
 * Trade Macro
 * Neversink's loot filters
 * Path of Building
+---
+## For Developers
+The installer is written using [NSIS](http://nsis.sourceforge.net/Main_Page) (Nullsoft Scriptable Install System), which is a professional open source system to create Windows installers. It is designed to be as small and flexible as possible and is therefore very suitable for internet distribution.
+
+In order to compile source code, you should download NSIS compiler (if you prefer developing in IDE check the info below), which is available in the [NSIS package](http://nsis.sourceforge.net/Download). The file makensisw.exe in the NSIS installation folder is the actual compiler. It has a graphical front end that explains three ways to load scripts, so it's very easy to use. Once you have installed NSIS, to create an installer, copy a script into a text editor, save the file with a .nsi extension, and load the file into the makensisw compiler. Refer to [source](http://nsis.sourceforge.net/Simple_tutorials) for more info and simple tutorials.
+
+If you prefer to work in a development environment refer to [list of IDE for NSIS](http://nsis.sourceforge.net/Category:Development_Environments). Clicking on a preferred IDE will guide you through the integration process.
