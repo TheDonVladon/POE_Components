@@ -73,7 +73,7 @@ Unicode true
 ; --------------------------------
 ; Macro's
 
-  ; Show MRSSAGEBOX with Abort, Retry, Ignore buttons
+  ; Show MESSAGEBOX with Abort, Retry, Ignore buttons
   ; 
   ; Usage:
   ; 
@@ -544,7 +544,7 @@ Unicode true
     DetailPrint "-------------Path Of Building Start-------------"
     retry:
       ClearErrors
-      DetailPrint "Downloading AutoHotkey.exe from ${AHK_URL} to ${AHK_EXE_PATH}"
+      DetailPrint "Downloading Path Of Building from ${POB_URL} to ${POB_EXE_PATH}"
       inetc::get /WEAKSECURITY ${POB_URL} ${POB_EXE_PATH} /END
       ; Get status
       Pop $0
@@ -606,9 +606,7 @@ Unicode true
     ${AndIf} "$R0" == "1"
     ${AndIf} ${FileExists} "$R1"
       ; Delete old installer
-      ${If} ${FileExists} "$R1"
-        Delete "$R1"
-      ${EndIf}
+      Delete "$R1"
     ; Check for updates
     ${Else}
       inetc::get /WEAKSECURITY /CAPTION "Auto Update" /BANNER "Checking for updates..." ${INST_CFG_URL} ${INST_CFG_PATH} /END
