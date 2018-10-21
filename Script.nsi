@@ -223,6 +223,16 @@ Unicode true
   !define POB_URL "https://api.github.com/repos/OpenArl/PathOfBuilding/releases/latest"
   !define POB_EXE_PATH "$PLUGINSDIR\PathOfBuilding-Setup.exe"
 
+  ; LabCompass
+  !define LabCompass_URL "https://api.github.com/repos/yznpku/LabCompass/releases/latest"
+  !define LabCompass_DIR "${COMPONENTS_DIR}\LabCompass"
+  !define LabCompass_ZIP_PATH "$PLUGINSDIR\LabCompass.zip"
+
+  ; MercuryTrade
+  !define MercuryTrade_URL "https://api.github.com/repos/Exslims/MercuryTrade/releases/latest"
+  !define MercuryTrade_DIR "${COMPONENTS_DIR}\MercuryTrade"
+  !define MercuryTrade_JAR_PATH "${MercuryTrade_DIR}\MercuryTrade.jar"
+
 ; --------------------------------
 ; Pages
   
@@ -422,31 +432,9 @@ Unicode true
               DetailPrint "Unzip status: $0"
               ; Unzip success
               ${If} "$0" == "success"
-                ; Get unzipped folder name
-                FindFirst $0 $1 "${AHK_TradeMacro_DIR}\*.*"
-                ; Store $R0 in stack
-                Push $R0
-                ; Assign new value
-                StrCpy $R0 0
-                ; Search folder
-                ${While} $R0 = 0
-                  ${IfNot} "$1" == "."
-                  ${AndIfNot} "$1" == ".."
-                    StrCpy $R0 1
-                  ${Else}
-                    FindNext $0 $1
-                  ${Endif}
-                ${EndWhile}
-                ; Restore $R0 from stack
-                Pop $R0
-                FindClose $0
-                ; Folder found
-                ${IfNot} "$1" == ""
-                  DetailPrint "Searching unzipped folder status: $1"
-                  DetailPrint "Creating a shortcut for ${AHK_TradeMacro_DIR}\$1\${AHK_TradeMacro_SCRIPT}"
-                  SetOutPath ${AHK_TradeMacro_DIR}\$1
-                  CreateShortCut "${AHK_SCRIPTS_DIR}\POE-TradeMacro.lnk" "${AHK_TradeMacro_DIR}\$1\${AHK_TradeMacro_SCRIPT}"
-                ${EndIf}
+                DetailPrint "Creating a shortcut for ${AHK_TradeMacro_DIR}\${AHK_TradeMacro_SCRIPT}"
+                SetOutPath ${AHK_TradeMacro_DIR}
+                CreateShortCut "${AHK_SCRIPTS_DIR}\POE-TradeMacro.lnk" "${AHK_TradeMacro_DIR}\${AHK_TradeMacro_SCRIPT}"
               ; Unzip Error
               ${Else}
                 Call LogDetailPrint
@@ -602,6 +590,93 @@ Unicode true
     end:
     DetailPrint "-------------Path Of Building End-------------"
   SectionEnd
+  
+  ; LabCompass section
+  Section "LabCompass" LabCompass
+    DetailPrint "-------------LabCompass Start-------------"
+    CreateDirectory ${LabCompass_DIR}
+    retry:
+      ClearErrors
+      DetailPrint "Get release data from ${LabCompass_URL}"
+      ${GetGithubDownloadUrl} $0 "${LabCompass_URL}" 0
+      ${IfNot} "$0" == "error"
+        DetailPrint "Downloading LabCompass from $0 to ${LabCompass_ZIP_PATH}"
+        inetc::get /WEAKSECURITY $0 ${LabCompass_ZIP_PATH} /END
+        ; Get status
+        Pop $0
+        DetailPrint "Download Status: $0"
+        ${If} "$0" == "OK"
+          ${If} ${FileExists} "${LabCompass_ZIP_PATH}"
+            DetailPrint "${LabCompass_ZIP_PATH} exists"
+            nsisunz::UnzipToStack "${LabCompass_ZIP_PATH}" "${LabCompass_DIR}"
+            Pop $0
+            DetailPrint "Unzip status: $0"
+            ; Unzip success
+            ${If} "$0" == "success"
+              ; Set registry key for LabCompass to run it straight away without restarts
+              WriteRegStr HKCU "Software\FutureCode\LabCompass" "poeClientPath" "$INSTDIR\.."
+            ; Unzip Error
+            ${Else}
+              Call LogDetailPrint
+              !insertmacro ShowAbortRetryIgnore "$(UNZIP_ERROR_TEXT)"
+            ${EndIf}
+          ; File not found - error
+          ${Else}
+            Call LogDetailPrint
+            !insertmacro ShowAbortRetryIgnore "$(ARCHIVE_NOTFOUND_ERROR_TEXT) ${LabCompass_ZIP_PATH}."
+          ${EndIf}
+        ; Download error
+        ${Else}
+          Call LogDetailPrint
+          !insertmacro ShowAbortRetryIgnore "$(DOWNLOAD_ERROR_TEXT)"
+        ${EndIf}
+      ${Else}
+        Call LogDetailPrint
+        !insertmacro ShowAbortRetryIgnore "$(DOWNLOAD_ERROR_TEXT)"
+      ${EndIf}
+      Goto end
+    abort:
+      DetailPrint "-------------LabCompass Abort-------------"
+      Quit
+    end:
+    DetailPrint "-------------LabCompass End-------------"
+  SectionEnd
+  
+  ; Java applications section group
+  SectionGroup "Java Applications" JavaApps
+    
+    ; MercuryTrade section
+    Section "MercuryTrade" MercuryTrade
+      DetailPrint "-------------MercuryTrade Start-------------"
+      CreateDirectory ${MercuryTrade_DIR}
+      retry:
+        ClearErrors
+        DetailPrint "Get release data from ${MercuryTrade_URL}"
+        ${GetGithubDownloadUrl} $0 "${MercuryTrade_URL}" 0
+        ${IfNot} "$0" == "error"
+          DetailPrint "Downloading MercuryTrade from $0 to ${MercuryTrade_JAR_PATH}"
+          inetc::get /WEAKSECURITY $0 ${MercuryTrade_JAR_PATH} /END
+          ; Get status
+          Pop $0
+          DetailPrint "Download Status: $0"
+          ${IfNot} "$0" == "OK"
+            Call LogDetailPrint
+            !insertmacro ShowAbortRetryIgnore "$(DOWNLOAD_ERROR_TEXT)"
+          ; Download error
+          ${EndIf}
+        ${Else}
+          Call LogDetailPrint
+          !insertmacro ShowAbortRetryIgnore "$(DOWNLOAD_ERROR_TEXT)"
+        ${EndIf}
+        Goto end
+      abort:
+        DetailPrint "-------------MercuryTrade Abort-------------"
+        Quit
+      end:
+      DetailPrint "-------------MercuryTrade End-------------"
+    SectionEnd
+
+  SectionGroupEnd
 
 ; --------------------------------
 ; Functions
