@@ -663,11 +663,12 @@ Unicode true
             ${IfNot} ${Errors}
               Pop $1
               inetc::get /WEAKSECURITY /CAPTION "Auto Update" /BANNER "Downloading updates..." "$1" "$PLUGINSDIR\POE_Components_$0.zip" /END
-              Pop $0
-              ${If} "$0" == "OK"
+              Pop $1
+              ${If} "$1" == "OK"
+                CreateDirectory "$PLUGINSDIR\POE_Components_$0"
                 nsisunz::UnzipToStack "$PLUGINSDIR\POE_Components_$0.zip" "$PLUGINSDIR\POE_Components_$0"
-                Pop $0
-                ${If} "$0" == "success"
+                Pop $1
+                ${If} "$1" == "success"
                   CopyFiles "$PLUGINSDIR\POE_Components_$0\*.exe" "$EXEDIR"
                   Exec '"$EXEDIR\${OUT_FILE_NAME}_$0.exe" --self-update="1" --old-file-path="$EXEPATH"'
                   Quit
