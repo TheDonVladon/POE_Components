@@ -131,6 +131,21 @@ Unicode true
     Call Trim
     Pop "${_ResultVar}"
   !macroend
+
+  ; Get the download url from github via github API
+  ;
+  ; Usage:
+  ;
+  ; ${GetGithubDownloadUrl} $0 "https://api.github.com/repos/TheDonVladon/POE_Components/releases/latest" 0
+  ; $0 will contain "error" in error case and the last release download url otherwise
+  ;
+  !define GetGithubDownloadUrl "!insertmacro GetGithubDownloadUrl"
+  !macro GetGithubDownloadUrl _ResultVar _GithubApiUrl _AssetIdx
+    Push "${_GithubApiUrl}"
+    Push "${_AssetIdx}"
+    Call GetGithubDownloadUrl
+    Pop "${_ResultVar}"
+  !macroend
   
 ; --------------------------------
 ; Custom Settings
@@ -154,7 +169,9 @@ Unicode true
 
   !define INST_CFG_URL "https://raw.githubusercontent.com/TheDonVladon/POE_Components/master/config.ini"
   !define INST_CFG_PATH "$PLUGINSDIR\config.ini"
-  !define RELEASE_URL_PART "https://github.com/TheDonVladon/POE_Components/releases/download/"
+  !define RELEASE_URL "https://api.github.com/repos/TheDonVladon/POE_Components/releases/latest"
+
+  !define RELEASE_DATA_JSON_PATH "$PLUGINSDIR\component_release_data.json"
 
 ; --------------------------------
 ; Interface Settings
@@ -186,7 +203,7 @@ Unicode true
   !define AHK_SCRIPTS_DIR "${AHK_DIR}\Scripts"
 
   ; AutoHotkey Scripts
-  !define AHK_TradeMacro_URL "https://github.com/PoE-TradeMacro/POE-TradeMacro/archive/master.zip"
+  !define AHK_TradeMacro_URL "https://api.github.com/repos/PoE-TradeMacro/PoE-TradeMacro/releases/latest"
   !define AHK_TradeMacro_DIR "${AHK_DIR}\TradeMacro"
   !define AHK_TradeMacro_ZIP_PATH "$PLUGINSDIR\POE-TradeMacro.zip"
   !define AHK_TradeMacro_SCRIPT "Run_TradeMacro.ahk"
@@ -197,13 +214,13 @@ Unicode true
 
   ; LootFilters
   !define LootFilters_DIR "${COMPONENTS_DIR}\LootFilters"
-  !define LootFilters_NeverSink_URL "https://github.com/NeverSinkDev/NeverSink-Filter/archive/master.zip"
+  !define LootFilters_NeverSink_URL "https://api.github.com/repos/NeverSinkDev/NeverSink-Filter/releases/latest"
   !define LootFilters_NeverSink_DIR "${LootFilters_DIR}\NeverSink"
   !define LootFilters_NeverSink_ZIP_PATH "$PLUGINSDIR\NeverSink.zip"
   !define LootFilters_FILE_LIST_PATH "$PLUGINSDIR\filelist.txt"
   
   ; Path Of Building
-  !define POB_URL "https://github.com/Openarl/PathOfBuilding/releases/download/v1.4.99/PathOfBuilding-Setup-1.4.99.exe"
+  !define POB_URL "https://api.github.com/repos/OpenArl/PathOfBuilding/releases/latest"
   !define POB_EXE_PATH "$PLUGINSDIR\PathOfBuilding-Setup.exe"
 
 ; --------------------------------
@@ -389,58 +406,65 @@ Unicode true
       CreateDirectory ${AHK_TradeMacro_DIR}
       retry:
         ClearErrors
-        DetailPrint "Downloading TradeMacro from ${AHK_TradeMacro_URL}"
-        inetc::get /WEAKSECURITY ${AHK_TradeMacro_URL} ${AHK_TradeMacro_ZIP_PATH} /END
-        ; Get status
-        Pop $0
-        DetailPrint "Download Status: $0"
-        ${If} "$0" == "OK"
-          ${If} ${FileExists} "${AHK_TradeMacro_ZIP_PATH}"
-            DetailPrint "${AHK_TradeMacro_ZIP_PATH} exists"
-            nsisunz::UnzipToStack "${AHK_TradeMacro_ZIP_PATH}" "${AHK_TradeMacro_DIR}"
-            Pop $0
-            DetailPrint "Unzip status: $0"
-            ; Unzip success
-            ${If} "$0" == "success"
-              ; Get unzipped folder name
-              FindFirst $0 $1 "${AHK_TradeMacro_DIR}\*.*"
-              ; Store $R0 in stack
-              Push $R0
-              ; Assign new value
-              StrCpy $R0 0
-              ; Search folder
-              ${While} $R0 = 0
-                ${IfNot} "$1" == "."
-                ${AndIfNot} "$1" == ".."
-                  StrCpy $R0 1
-                ${Else}
-                  FindNext $0 $1
-                ${Endif}
-              ${EndWhile}
-              ; Restore $R0 from stack
-              Pop $R0
-              FindClose $0
-              ; Folder found
-              ${IfNot} "$1" == ""
-                DetailPrint "Searching unzipped folder status: $1"
-                DetailPrint "Creating a shortcut for ${AHK_TradeMacro_DIR}\$1\${AHK_TradeMacro_SCRIPT}"
-                SetOutPath ${AHK_TradeMacro_DIR}\$1
-                CreateShortCut "${AHK_SCRIPTS_DIR}\POE-TradeMacro.lnk" "${AHK_TradeMacro_DIR}\$1\${AHK_TradeMacro_SCRIPT}"
+        DetailPrint "Get release data from ${AHK_TradeMacro_URL}"
+        ${GetGithubDownloadUrl} $0 "${AHK_TradeMacro_URL}" 0
+        ${IfNot} "$0" == "error"
+          DetailPrint "Downloading TradeMacro from $0"
+          inetc::get /WEAKSECURITY $0 ${AHK_TradeMacro_ZIP_PATH} /END
+          ; Get status
+          Pop $0
+          DetailPrint "Download Status: $0"
+          ${If} "$0" == "OK"
+            ${If} ${FileExists} "${AHK_TradeMacro_ZIP_PATH}"
+              DetailPrint "${AHK_TradeMacro_ZIP_PATH} exists"
+              nsisunz::UnzipToStack "${AHK_TradeMacro_ZIP_PATH}" "${AHK_TradeMacro_DIR}"
+              Pop $0
+              DetailPrint "Unzip status: $0"
+              ; Unzip success
+              ${If} "$0" == "success"
+                ; Get unzipped folder name
+                FindFirst $0 $1 "${AHK_TradeMacro_DIR}\*.*"
+                ; Store $R0 in stack
+                Push $R0
+                ; Assign new value
+                StrCpy $R0 0
+                ; Search folder
+                ${While} $R0 = 0
+                  ${IfNot} "$1" == "."
+                  ${AndIfNot} "$1" == ".."
+                    StrCpy $R0 1
+                  ${Else}
+                    FindNext $0 $1
+                  ${Endif}
+                ${EndWhile}
+                ; Restore $R0 from stack
+                Pop $R0
+                FindClose $0
+                ; Folder found
+                ${IfNot} "$1" == ""
+                  DetailPrint "Searching unzipped folder status: $1"
+                  DetailPrint "Creating a shortcut for ${AHK_TradeMacro_DIR}\$1\${AHK_TradeMacro_SCRIPT}"
+                  SetOutPath ${AHK_TradeMacro_DIR}\$1
+                  CreateShortCut "${AHK_SCRIPTS_DIR}\POE-TradeMacro.lnk" "${AHK_TradeMacro_DIR}\$1\${AHK_TradeMacro_SCRIPT}"
+                ${EndIf}
+              ; Unzip Error
+              ${Else}
+                Call LogDetailPrint
+                !insertmacro ShowAbortRetryIgnore "$(UNZIP_ERROR_TEXT)"
               ${EndIf}
-            ; Unzip Error
+            ; File not found - error
             ${Else}
               Call LogDetailPrint
-              !insertmacro ShowAbortRetryIgnore "$(UNZIP_ERROR_TEXT)"
+              !insertmacro ShowAbortRetryIgnore "$(ARCHIVE_NOTFOUND_ERROR_TEXT) ${AHK_TradeMacro_ZIP_PATH}."
             ${EndIf}
-          ; File not found - error
+          ; Download Error
           ${Else}
             Call LogDetailPrint
-            !insertmacro ShowAbortRetryIgnore "$(ARCHIVE_NOTFOUND_ERROR_TEXT) ${AHK_TradeMacro_ZIP_PATH}."
+            !insertmacro ShowAbortRetryIgnore "$(DOWNLOAD_ERROR_TEXT)"
           ${EndIf}
-        ; Download Error
         ${Else}
-           Call LogDetailPrint
-           !insertmacro ShowAbortRetryIgnore "$(DOWNLOAD_ERROR_TEXT)"
+          Call LogDetailPrint
+          !insertmacro ShowAbortRetryIgnore "$(DOWNLOAD_ERROR_TEXT)"
         ${EndIf}
         Goto end
       abort:
@@ -461,73 +485,80 @@ Unicode true
       CreateDirectory ${LootFilters_NeverSink_DIR}
       retry:
         ClearErrors
-        DetailPrint "Downloading NeverSink loot filter from ${LootFilters_NeverSink_URL} to ${LootFilters_NeverSink_DIR}"
-        inetc::get /WEAKSECURITY ${LootFilters_NeverSink_URL} ${LootFilters_NeverSink_ZIP_PATH} /END
-        ; Get status
-        Pop $0
-        DetailPrint "Download Status: $0"
-        ${If} "$0" == "OK"
-          ${If} ${FileExists} "${LootFilters_NeverSink_ZIP_PATH}"
-            DetailPrint "Unzip ${LootFilters_NeverSink_ZIP_PATH}"
-            nsisunz::UnzipToStack "${LootFilters_NeverSink_ZIP_PATH}" "${LootFilters_NeverSink_DIR}"
-            Pop $0
-            DetailPrint "Unzip status: $0"
-            ${If} "$0" == "success"
-              ; Get unzipped folder name
-              FindFirst $0 $1 "${LootFilters_NeverSink_DIR}\*.*"
-              ; Store $R0 in stack
-              Push $R0
-              ; Assign new value
-              StrCpy $R0 0
-              ; Search folder
-              ${While} $R0 = 0
-                ${IfNot} "$1" == "."
-                ${AndIfNot} "$1" == ".."
-                  StrCpy $R0 1
-                ${Else}
-                  FindNext $0 $1
-                ${Endif}
-              ${EndWhile}
-              ; Restore $R0 from stack
-              Pop $R0
-              FindClose $0
+        DetailPrint "Get release data from ${LootFilters_NeverSink_URL}"
+        ${GetGithubDownloadUrl} $0 "${LootFilters_NeverSink_URL}" 0
+        ${IfNot} "$0" == "error"
+          DetailPrint "Downloading NeverSink loot filter from $0 to ${LootFilters_NeverSink_DIR}"
+          inetc::get /WEAKSECURITY $0 ${LootFilters_NeverSink_ZIP_PATH} /END
+          ; Get status
+          Pop $0
+          DetailPrint "Download Status: $0"
+          ${If} "$0" == "OK"
+            ${If} ${FileExists} "${LootFilters_NeverSink_ZIP_PATH}"
+              DetailPrint "Unzip ${LootFilters_NeverSink_ZIP_PATH}"
+              nsisunz::UnzipToStack "${LootFilters_NeverSink_ZIP_PATH}" "${LootFilters_NeverSink_DIR}"
+              Pop $0
+              DetailPrint "Unzip status: $0"
+              ${If} "$0" == "success"
+                ; Get unzipped folder name
+                FindFirst $0 $1 "${LootFilters_NeverSink_DIR}\*.*"
+                ; Store $R0 in stack
+                Push $R0
+                ; Assign new value
+                StrCpy $R0 0
+                ; Search folder
+                ${While} $R0 = 0
+                  ${IfNot} "$1" == "."
+                  ${AndIfNot} "$1" == ".."
+                    StrCpy $R0 1
+                  ${Else}
+                    FindNext $0 $1
+                  ${Endif}
+                ${EndWhile}
+                ; Restore $R0 from stack
+                Pop $R0
+                FindClose $0
                        
-              ; Folder found
-              ${IfNot} "$1" == ""
-                DetailPrint "Searching unzipped folder status: $1"
-                DetailPrint "Copy .filter files from ${LootFilters_NeverSink_DIR}\$1 to $varPoeProfileDir"
+                ; Folder found
+                ${IfNot} "$1" == ""
+                  DetailPrint "Searching unzipped folder status: $1"
+                  DetailPrint "Copy .filter files from ${LootFilters_NeverSink_DIR}\$1 to $varPoeProfileDir"
                 
-                ${WriteFileList} "${LootFilters_FILE_LIST_PATH}" "*.filter" "${LootFilters_NeverSink_DIR}\$1" 
-                FileOpen $0 "${LootFilters_FILE_LIST_PATH}" r
-                ${DoUntil} ${Errors}
-                  ClearErrors
-                  FileRead $0 $2
-                  ${Trim} $2 $2
-                  ${IfNot} "$2" == ""
-                    ${If} ${FileExists} "$varPoeProfileDir\$2"
-                      SetErrors
-                      MessageBox MB_YESNO|MB_ICONQUESTION  "$(LOOTFILTER_NEVERSINK_EXISTS_TEXT)" /SD IDYES IDNO end
+                  ${WriteFileList} "${LootFilters_FILE_LIST_PATH}" "*.filter" "${LootFilters_NeverSink_DIR}\$1" 
+                  FileOpen $0 "${LootFilters_FILE_LIST_PATH}" r
+                  ${DoUntil} ${Errors}
+                    ClearErrors
+                    FileRead $0 $2
+                    ${Trim} $2 $2
+                    ${IfNot} "$2" == ""
+                      ${If} ${FileExists} "$varPoeProfileDir\$2"
+                        SetErrors
+                        MessageBox MB_YESNO|MB_ICONQUESTION  "$(LOOTFILTER_NEVERSINK_EXISTS_TEXT)" /SD IDYES IDNO end
+                      ${EndIf}
                     ${EndIf}
-                  ${EndIf}
-                ${LoopUntil} 1 = 0
-                FileClose $0
+                  ${LoopUntil} 1 = 0
+                  FileClose $0
 
-                CopyFiles "${LootFilters_NeverSink_DIR}\$1\*.filter" $varPoeProfileDir
+                  CopyFiles "${LootFilters_NeverSink_DIR}\$1\*.filter" $varPoeProfileDir
+                ${EndIf}
+              ; Unzip Error
+              ${Else}
+                Call LogDetailPrint
+                !insertmacro ShowAbortRetryIgnore "$(UNZIP_ERROR_TEXT)"
               ${EndIf}
-            ; Unzip Error
+            ; File not found - error
             ${Else}
               Call LogDetailPrint
-              !insertmacro ShowAbortRetryIgnore "$(UNZIP_ERROR_TEXT)"
+              !insertmacro ShowAbortRetryIgnore "$(ARCHIVE_NOTFOUND_ERROR_TEXT) ${LootFilters_NeverSink_DIR}."
             ${EndIf}
-          ; File not found - error
+          ; Download error
           ${Else}
             Call LogDetailPrint
-            !insertmacro ShowAbortRetryIgnore "$(ARCHIVE_NOTFOUND_ERROR_TEXT) ${LootFilters_NeverSink_DIR}."
+            !insertmacro ShowAbortRetryIgnore "$(DOWNLOAD_ERROR_TEXT)"
           ${EndIf}
-        ; Download error
         ${Else}
-           Call LogDetailPrint
-           !insertmacro ShowAbortRetryIgnore "$(DOWNLOAD_ERROR_TEXT)"
+          Call LogDetailPrint
+          !insertmacro ShowAbortRetryIgnore "$(DOWNLOAD_ERROR_TEXT)"
         ${EndIf}
         Goto end
       abort:
@@ -544,15 +575,22 @@ Unicode true
     DetailPrint "-------------Path Of Building Start-------------"
     retry:
       ClearErrors
-      DetailPrint "Downloading Path Of Building from ${POB_URL} to ${POB_EXE_PATH}"
-      inetc::get /WEAKSECURITY ${POB_URL} ${POB_EXE_PATH} /END
-      ; Get status
-      Pop $0
-      DetailPrint "Download Status: $0"
-      ${If} "$0" == "OK"
-        ExecWait '"${POB_EXE_PATH}"' $0
-        DetailPrint "Execution status: $0"
-      ; Download error
+      DetailPrint "Get release data from ${POB_URL}"
+      ${GetGithubDownloadUrl} $0 "${POB_URL}" 1
+      ${IfNot} "$0" == "error"
+        DetailPrint "Downloading Path Of Building from $0 to ${POB_EXE_PATH}"
+        inetc::get /WEAKSECURITY $0 ${POB_EXE_PATH} /END
+        ; Get status
+        Pop $0
+        DetailPrint "Download Status: $0"
+        ${If} "$0" == "OK"
+          ExecWait '"${POB_EXE_PATH}"' $0
+          DetailPrint "Execution status: $0"
+        ; Download error
+        ${Else}
+          Call LogDetailPrint
+          !insertmacro ShowAbortRetryIgnore "$(DOWNLOAD_ERROR_TEXT)"
+        ${EndIf}
       ${Else}
         Call LogDetailPrint
         !insertmacro ShowAbortRetryIgnore "$(DOWNLOAD_ERROR_TEXT)"
@@ -572,6 +610,7 @@ Unicode true
     ; $PLUGINSDIR is the path to a temporary folder created upon the first usage of a plug-in or a call to InitPluginsDir 
     ; This folder is automatically deleted when the installer exits
     InitPluginsDir
+
     ; Enable security protocols (inetc plugin sends requests via IE, most of the websites requires TLS 1.2 security protocol)
     ReadRegDWORD $0 HKCU "Software\Microsoft\Windows\CurrentVersion\Internet Settings" "SecureProtocols"
     ${IfNot} $0 = 2720
@@ -609,18 +648,32 @@ Unicode true
       Delete "$R1"
     ; Check for updates
     ${Else}
-      inetc::get /WEAKSECURITY /CAPTION "Auto Update" /BANNER "Checking for updates..." ${INST_CFG_URL} ${INST_CFG_PATH} /END
+      inetc::get /WEAKSECURITY /CAPTION "Auto Update" /BANNER "Checking for updates..." ${RELEASE_URL} ${RELEASE_DATA_JSON_PATH}  /END
       Pop $0
       ${If} "$0" == "OK"
-      ${AndIf} ${FileExists} "${INST_CFG_PATH}"
-        ReadINIStr $1 "${INST_CFG_PATH}" "SETTINGS" "version"
-        ${IfNot} "$1" == "${VERSION}"
-          MessageBox MB_YESNO "${UPDATE_AVAILABLE_TEXT}" /SD IDYES IDNO end
-          inetc::get /WEAKSECURITY /CAPTION "Auto Update" /BANNER "Downloading updates..." "${RELEASE_URL_PART}v$1/${OUT_FILE_NAME}_$1.exe" "$EXEDIR\${OUT_FILE_NAME}_$1.exe" /END
+        nsJSON::Set /file "${RELEASE_DATA_JSON_PATH}"
+        ClearErrors
+        nsJSON::Get "tag_name" /END
+        ${IfNot} ${Errors}
           Pop $0
-          ${If} "$0" == "OK"
-            Exec '"$EXEDIR\${OUT_FILE_NAME}_$1.exe" --self-update="1" --old-file-path="$EXEPATH"'
-            Quit
+          ${CharStrip} "v" "$0" $0
+          ${IfNot} "$0" == "${VERSION}"
+            MessageBox MB_YESNO "${UPDATE_AVAILABLE_TEXT}" /SD IDYES IDNO end
+            nsJSON::Get "assets" /index 0 "browser_download_url" /END
+            ${IfNot} ${Errors}
+              Pop $1
+              inetc::get /WEAKSECURITY /CAPTION "Auto Update" /BANNER "Downloading updates..." "$1" "$PLUGINSDIR\POE_Components_$0.zip" /END
+              Pop $0
+              ${If} "$0" == "OK"
+                nsisunz::UnzipToStack "$PLUGINSDIR\POE_Components_$0.zip" "$PLUGINSDIR\POE_Components_$0"
+                Pop $0
+                ${If} "$0" == "success"
+                  CopyFiles "$PLUGINSDIR\POE_Components_$0\*.exe" "$EXEDIR"
+                  Exec '"$EXEDIR\${OUT_FILE_NAME}_$0.exe" --self-update="1" --old-file-path="$EXEPATH"'
+                  Quit
+                ${EndIf}
+              ${EndIf}
+            ${EndIf}
           ${EndIf}
         ${EndIf}
       ${EndIf}
@@ -818,4 +871,37 @@ Unicode true
     Pop $1
     Pop $0
   FunctionEnd
-  
+
+  Function GetGithubDownloadUrl
+    ; ${_AssetIdx}
+    Exch $0
+    Exch
+    ; ${_GithubApiUrl}
+    Exch $1
+    Push $2
+
+    ; Get json from github API
+    inetc::get /WEAKSECURITY $1 ${RELEASE_DATA_JSON_PATH} /END
+    Pop $2
+    ${If} "$2" == "OK"
+      nsJSON::Set /file "${RELEASE_DATA_JSON_PATH}"
+      ClearErrors
+      nsJSON::Get "assets" /index $0 "browser_download_url" /END
+      ${If} ${Errors}
+        ClearErrors
+        ; use source url
+        nsJSON::Get "zipball_url" /END
+        ${If} ${Errors}
+          Pop $2
+          Pop $1
+          Pop $0
+          Push "error"
+        ${EndIf}
+      ${EndIf}
+    ${Else}
+      Pop $2
+      Pop $1
+      Pop $0
+      Push "error"
+    ${EndIf}
+  FunctionEnd
