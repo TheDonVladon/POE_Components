@@ -29,6 +29,8 @@ POE_Components will work in any Path of Exile version unless some core changes i
 * Trade Macro
 * Neversink's loot filters
 * Path of Building
+* LabCompass
+* MercuryTrade
 ---
 ## For Developers
 The installer is written using [NSIS](http://nsis.sourceforge.net/Main_Page) (Nullsoft Scriptable Install System), which is a professional open source system to create Windows installers. It is designed to be as small and flexible as possible and is therefore very suitable for internet distribution.
