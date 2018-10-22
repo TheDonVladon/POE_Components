@@ -21,6 +21,7 @@ POE_Components will work in any Path of Exile version unless some core changes i
 * Custom shortcut, which runs all scripts and shortcuts placed in POE_Components\Components\AutoHotkey\Scripts as well as game executable - no need to run scripts/tools manually
 * Chosen loot filters will be added to the game automatically - no need (but you can) in moving filter files to the appropriate folder
 * Loot filter selection in the installer - no need (but you can) to select loot filter in-game if selected in the installer
+* Installing LabCompass via POE_Components will add game client path to the LabCompass automatically. Run LabCompass, import maps - profit
 * Compatible with GGG and Steam clients
 
 ## Components
