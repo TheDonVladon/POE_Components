@@ -3,7 +3,7 @@ This is a free software which provides an installer for additional components fo
 
 ### Why POE_Components is useful?
 At some point, every POE player faces a need for additional programs, 
-scripts, loot filters, which will make the POE experience much smoother. The installer downloads the latest versions of officially allowed components (programs, scripts, loot filters) and installs them in the Path of Exile game folder.
+scripts, loot filters, which will make the POE experience much smoother. The installer downloads the latest versions of additional components (programs, scripts, loot filters) and installs them in the Path of Exile game folder.
 
 In case if some component, which doesn't provide auto updater, releases a new version, execute the POE_Components installer, 
 and it will download the latest version for the selected components, no need to download anything by hand.
