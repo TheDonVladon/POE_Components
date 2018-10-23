@@ -12,8 +12,7 @@ Additionally, POE_Components creates a custom shortcut, which runs all the scrip
 Check "Features" section for more info.
 
 ### Note
-POE_Components was developed for Microsoft Windows users.
-POE_Components will work in any Path of Exile version unless some core changes in POE will take place in a file structure.
+POE_Components was developed for Microsoft Windows users. An installer will work in any Path of Exile version unless some core changes in POE will take place in a file structure.
 
 ## Features
 * AutoUpdater - download POE_Components once
